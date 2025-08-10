@@ -20,8 +20,7 @@
   input[type="text"],textarea{width:100%;border:1px solid var(--border);background:var(--input);color:var(--fg);border-radius:12px;padding:14px;font-size:16px}
   input[type="checkbox"]{transform:scale(1.2)} textarea{min-height:96px;resize:vertical}
   .btn{appearance:none;border:0;border-radius:14px;padding:14px 16px;font-weight:700;color:#00110e;background:var(--accent);cursor:pointer;min-height:44px}
-  .btn.secondary{background:#334155;color:#e5eef0;border:1px solid var(--border)}
-  .btn:disabled{opacity:.6;cursor:not-allowed}
+  .btn.secondary{background:#334155;color:#e5eef0;border:1px solid var(--border)} .btn:disabled{opacity:.6;cursor:not-allowed}
   .toolbar{display:flex;gap:10px;flex-wrap:wrap}
   .status{font-size:14px;margin-top:10px}
   .ok{color:var(--accent2)} .warnText{color:var(--warn)} .err{color:var(--err)}
@@ -30,10 +29,9 @@
   .fabbar{position:sticky;bottom:0;z-index:10;background:linear-gradient(180deg,#0b0f1400,#0b0f14 30%);padding:8px 4px}
   .fabbar .toolbar{justify-content:space-between}
   /* Toast */
-  #toast { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); background: #0f172a; color: #e7f0f2; border: 1px solid #1f2a36; padding: 10px 14px; border-radius: 12px; box-shadow: 0 8px 30px #0006; font-size: 14px; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; }
-  #toast.show { opacity: 1; transform: translateX(-50%) translateY(-4px); }
-  #toast.ok   { border-color: #14532d; }
-  #toast.err  { border-color: #7f1d1d; }
+  #toast { position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#0f172a;color:#e7f0f2;border:1px solid #1f2a36;
+           padding:10px 14px;border-radius:12px;box-shadow:0 8px 30px #0006;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s; }
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(-4px)} #toast.ok{border-color:#14532d} #toast.err{border-color:#7f1d1d}
 </style>
 <script src="https://unpkg.com/tesseract.js@5.1.0/dist/tesseract.min.js"></script>
 <script src="https://unpkg.com/luxon@3.4.4/build/global/luxon.min.js"></script>
@@ -98,10 +96,10 @@
 <div id="toast" aria-live="polite"></div>
 
 <script>
-  // ===== Hardcoded Google Apps Script endpoint (your updated /exec) =====
+  // ===== Hardcoded Google Apps Script endpoint (your new /exec) =====
   const ENDPOINT = 'https://script.google.com/macros/s/AKfycbwlbzfKuN0bbHsEuT3ykv_z5F11rEUZ5yS2Be2u02I9_-sEBBpG9cEcjCkJ50Qn_rY/exec';
 
-  // Luxon alias (avoid DateTime redefinition conflicts)
+  // Luxon alias (avoid DateTime collisions)
   const LuxonDT = (typeof window!=='undefined' && window.__LuxonDT) ? window.__LuxonDT : luxon.DateTime;
   if (typeof window!=='undefined') window.__LuxonDT = LuxonDT;
 
@@ -139,11 +137,11 @@
     pingBtn: pingBtn, pingStatus: pingStatus
   };
 
-  // Toast helper
+  // Toast
   function showToast(msg, kind='ok', ms=2000){
-    const el = document.getElementById('toast');
-    el.textContent = msg; el.className=''; el.classList.add('show', kind);
-    clearTimeout(showToast._t); showToast._t = setTimeout(()=> el.classList.remove('show'), ms);
+    const el=document.getElementById('toast');
+    el.textContent=msg; el.className=''; el.classList.add('show', kind);
+    clearTimeout(showToast._t); showToast._t=setTimeout(()=>el.classList.remove('show'), ms);
   }
 
   // Image handling
@@ -192,7 +190,6 @@
     let h=parseInt(m[1],10),min=parseInt(m[2]||'0',10),ap=m[3]; if(!ap){ if(h>=13) return format12h(h,min); ap='pm'; }
     if(ap==='am'&&h===12) h=0; if(ap==='pm'&&h<12) h+=12; return format12h(h,min);
   }
-
   function parseFromRaw(){
     const cleaned=smartClean(els.rawText.value);
     const lines=cleaned.split('\n').map(l=>l.trim()).filter(Boolean);
@@ -226,19 +223,13 @@
     try{
       const r=await fetch(ENDPOINT,{method:'GET'});
       const t=await r.text();
-      pingStatus.innerHTML=r.ok?`<span class="ok">OK:</span> ${t}`:`<span class="err">Error:</span> ${t||r.status}`;
-      showToast(r.ok?'Endpoint OK':'Ping error', r.ok?'ok':'err');
+      if(r.ok){ pingStatus.innerHTML=`<span class="ok">OK:</span> ${t}`; showToast('Ping OK', 'ok'); }
+      else { pingStatus.innerHTML=`<span class="err">Error:</span> ${t||r.status}`; showToast('Ping failed', 'err'); }
     }catch(e){ pingStatus.innerHTML=`<span class="err">Network error:</span> ${e.message}`; showToast('Network error', 'err'); }
   });
 
   // Send to Google Sheet — using text/plain to avoid CORS preflight
   sendBtn.addEventListener('click', async ()=>{
-    if (!ENDPOINT || !/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(ENDPOINT)) {
-      sendStatus.innerHTML = '<span class="err">Missing/invalid ENDPOINT.</span>';
-      showToast('Missing Web App URL', 'err');
-      return;
-    }
-
     const fields={
       event:event.value.trim(), location:location.value.trim(), date:date.value.trim(),
       startTime:startTime.value.trim(), endTime:endTime.value.trim(), allDay:allDay.checked,
@@ -254,15 +245,14 @@
 
     sendStatus.textContent='Sending…'; sendBtn.disabled=true; showToast('Sending…','ok',1200);
     try{
-      const r=await fetch(ENDPOINT,{ method:'POST', headers:{'Content-Type':'text/plain; charset=utf-8'}, body: JSON.stringify(payload) });
+      const r=await fetch(ENDPOINT,{ method:'POST', headers:{'Content-Type':'text/plain; charset=utf-8'}, body:JSON.stringify(payload) });
       const t=await r.text();
       if(!r.ok) throw new Error(t||('HTTP '+r.status));
-      sendStatus.innerHTML='<span class="ok">Row appended ✔</span>';
-      showToast('Push successful ✔','ok');
+      sendStatus.innerHTML='<span class="ok">Row appended ✔</span>'; showToast('Push successful ✔','ok');
     }catch(e){
-      sendStatus.innerHTML='<span class="err">Send failed:</span> '+e.message+'<div class="helper">Check Apps Script deployment & sheet name.</div>';
+      sendStatus.innerHTML='<span class="err">Send failed:</span> '+e.message+'<div class="helper">If this persists, ensure Apps Script is deployed (Execute as: Me, Access: Anyone) and your sheet/tab names match.</div>';
       showToast('Push failed','err');
-    }finally{ sendBtn.disabled = false; }
+    }finally{ sendBtn.disabled=false; }
   });
 </script>
 </body>
