@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <title>Snap ➜ Sheet: Date Calendar</title>
+  <link rel="preconnect" href="https://unpkg.com"/>
+  <style>
+    :root { --bg:#0b0f14; --fg:#e7f0f2; --muted:#9fb2ba; --accent:#2dd4bf; --accent2:#22c55e; --warn:#f59e0b; --err:#ef4444; --card:#121a22; --input:#0f1720; --border:#1f2a36; }
+    *{box-sizing:border-box}
+    html,body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial}
+    header{position:sticky;top:0;z-index:5;background:linear-gradient(180deg,#0b0f14,#0b0f14e6 70%,#0b0f1400);backdrop-filter:saturate(1.2) blur(2px);}    
+    h1{margin:0;padding:14px 16px;font-size:20px;display:flex;align-items:center;gap:10px}
+    h1 span.logo{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#60a5fa)}
+    main{padding:12px;max-width:920px;margin:0 auto}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;margin:12px 0;box-shadow:0 6px 20px #00000033}
+    .row{display:flex;flex-wrap:wrap;gap:10px}
+    .col{flex:1 1 240px;min-width:220px}
+    label{display:block;font-size:12px;color:var(--muted);margin:10px 0 6px}
+    input[type="text"], input[type="date"], input[type="time"], textarea{width:100%;border:1px solid var(--border);background:var(--input);color:var(--fg);border-radius:12px;padding:12px}
+    input[type="checkbox"]{transform:scale(1.2);}    
+    textarea{min-height:96px;resize:vertical}
+    .btn{appearance:none;border:0;border-radius:12px;padding:12px 14px;font-weight:600;color:#00110e;background:var(--accent);cursor:pointer}
+    .btn.secondary{background:#334155;color:#e5eef0;border:1px solid var(--border)}
+    .btn.warn{background:var(--warn);color:#0b0b00}
+    .btn:disabled{opacity:.6;cursor:not-allowed}
+    .toolbar{display:flex;gap:10px;flex-wrap:wrap}
+    .chips{display:flex;gap:8px;flex-wrap:wrap}
+    .chip{font-size:12px;background:#0f1a20;border:1px dashed var(--border);padding:6px 10px;border-radius:999px;color:var(--muted)}
+    .status{font-size:14px;margin-top:10px}
+    .ok{color:var(--accent2)} .warnText{color:var(--warn)} .err{color:var(--err)}
+    .preview{width:100%;max-height:320px;object-fit:contain;border-radius:12px;border:1px solid var(--border);background:#0a1016}
+    small.helper{display:block;color:var(--muted);margin-top:6px}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    @media (max-width:560px){.grid2{grid-template-columns:1fr}}
+    code.inline{font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;background:#0d141b;border:1px solid var(--border);padding:2px 6px;border-radius:6px}
+  </style>
+  <script src="https://unpkg.com/tesseract.js@5.1.0/dist/tesseract.min.js"></script>
+  <script src="https://unpkg.com/luxon@3.4.4/build/global/luxon.min.js"></script>
+</head>
+<body>
+  <header>
+    <h1><span class="logo">📅</span> Snap → Google Sheet: Date Calendar</h1>
+  </header>
+  <main>
+    <section class="card" id="captureCard">
+      <div class="toolbar">
+        <label class="btn" for="file">📷 Snap / Upload Image</label>
+        <input id="file" type="file" accept="image/*" capture="environment" hidden />
+        <input id="galleryFile" type="file" accept="image/*" hidden />
+        <button id="galleryBtn" class="btn secondary" type="button">🖼 Upload from Gallery</button>
+        <button id="ocrBtn" class="btn" type="button" disabled>🔎 Run OCR</button>
+        <button id="clearBtn" class="btn secondary" type="button">🧹 Clear</button>
+      </div>
+      <small class="helper">Use Snap for camera, Gallery for camera roll.</small>
+      <div id="imgWrap" style="margin-top:10px;display:none">
+        <img id="preview" class="preview" alt="preview" />
+      </div>
+      <div id="ocrStatus" class="status"></div>
+      <label for="rawText">Extracted / Provided Text</label>
+      <textarea id="rawText" placeholder="OCR text will appear here."></textarea>
+      <div class="toolbar" style="margin-top:10px">
+        <button id="parseBtn" class="btn" type="button">🧠 Parse → Fields</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h3>Event Details → Date Calendar</h3>
+      <div class="grid2">
+        <div class="col">
+          <label for="event">Event</label>
+          <input id="event" type="text" />
+        </div>
+        <div class="col">
+          <label for="location">Location</label>
+          <input id="location" type="text" />
+        </div>
+        <div class="col">
+          <label for="date">Date</label>
+          <input id="date" type="text" />
+        </div>
+        <div class="col">
+          <label for="startTime">Start Time</label>
+          <input id="startTime" type="text" />
+        </div>
+        <div class="col">
+          <label for="endTime">End Time</label>
+          <input id="endTime" type="text" />
+        </div>
+        <div class="col" style="display:flex;align-items:flex-end;gap:10px">
+          <input id="allDay" type="checkbox" />
+          <label for="allDay">All Day</label>
+        </div>
+      </div>
+      <label for="notes">Notes</label>
+      <textarea id="notes"></textarea>
+      <div class="toolbar" style="margin-top:10px">
+        <button id="sendBtn" class="btn" type="button">➡️ Send to Google Sheet</button>
+      </div>
+      <div id="sendStatus" class="status"></div>
+    </section>
+  </main>
+
+  <script>
+    const { DateTime: LuxonDateTime } = luxon;
+    const els = {
+      file: document.getElementById('file'),
+      galleryFile: document.getElementById('galleryFile'),
+      galleryBtn: document.getElementById('galleryBtn'),
+      ocrBtn: document.getElementById('ocrBtn'),
+      clearBtn: document.getElementById('clearBtn'),
+      preview: document.getElementById('preview'),
+      imgWrap: document.getElementById('imgWrap'),
+      ocrStatus: document.getElementById('ocrStatus'),
+      rawText: document.getElementById('rawText'),
+      parseBtn: document.getElementById('parseBtn'),
+      event: document.getElementById('event'),
+      location: document.getElementById('location'),
+      date: document.getElementById('date'),
+      startTime: document.getElementById('startTime'),
+      endTime: document.getElementById('endTime'),
+      allDay: document.getElementById('allDay'),
+      notes: document.getElementById('notes'),
+      sendBtn: document.getElementById('sendBtn'),
+      sendStatus: document.getElementById('sendStatus')
+    };
+
+    let imgBlob = null;
+    const setImage = (file) => {
+      imgBlob = file;
+      const url = URL.createObjectURL(file);
+      els.preview.src = url;
+      els.imgWrap.style.display = 'block';
+      els.ocrBtn.disabled = false;
+    };
+
+    els.file.addEventListener('change', () => { if(els.file.files[0]) setImage(els.file.files[0]); });
+    els.galleryBtn.addEventListener('click', () => els.galleryFile.click());
+    els.galleryFile.addEventListener('change', () => { if(els.galleryFile.files[0]) setImage(els.galleryFile.files[0]); });
+    els.clearBtn.addEventListener('click', () => { imgBlob = null; els.imgWrap.style.display='none'; els.rawText.value=''; });
+
+    els.ocrBtn.addEventListener('click', async () => {
+      if(!imgBlob) return;
+      els.ocrStatus.textContent = 'Running OCR…';
+      const { data } = await Tesseract.recognize(imgBlob, 'eng');
+      els.rawText.value = (data.text||'').trim();
+      els.ocrStatus.textContent = 'OCR complete';
+    });
+
+    const normalizeDateStr = (s) => {
+      if(!s) return '';
+      const dt = LuxonDateTime.fromJSDate(new Date(s));
+      return dt.isValid ? dt.toFormat('EEE, LLLL d, yyyy') : s;
+    };
+    const normalizeTimeStr = (s) => {
+      if(!s) return '';
+      return LuxonDateTime.fromJSDate(new Date(`1970-01-01 ${s}`)).toFormat('h:mm a');
+    };
+
+    const extractBriefNotes = (text) => {
+      const words = text.split(/\s+/).slice(0, 5).join(' ');
+      return words;
+    };
+
+    els.parseBtn.addEventListener('click', () => {
+      const lines = els.rawText.value.split('\n').map(l => l.trim()).filter(Boolean);
+      els.event.value = lines[0] || '';
+      els.location.value = lines[1] || '';
+      const dateLine = lines.find(l => /\d{4}|\d{1,2}\/\d{1,2}/.test(l)) || '';
+      els.date.value = normalizeDateStr(dateLine);
+      const timeLine = lines.find(l => /\d{1,2}:\d{2}/.test(l)) || '';
+      if(timeLine.includes('-')) {
+        const [start,end] = timeLine.split('-').map(t => normalizeTimeStr(t));
+        els.startTime.value = start; els.endTime.value = end; els.allDay.checked = false;
+      } else if(timeLine) {
+        els.startTime.value = normalizeTimeStr(timeLine); els.endTime.value = ''; els.allDay.checked = false;
+      } else {
+        els.startTime.value = ''; els.endTime.value = ''; els.allDay.checked = true;
+      }
+      els.notes.value = extractBriefNotes(els.rawText.value);
+    });
+
+    els.allDay.addEventListener('change', () => {
+      if(els.allDay.checked) { els.startTime.value=''; els.endTime.value=''; }
+    });
+  </script>
+</body>
+</html>
