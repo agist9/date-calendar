@@ -1,64 +1,59 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
 
 <!-- App-like settings -->
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Date Calendar OCR">
-<link rel="apple-touch-icon" href="https://upload.wikimedia.org/wikipedia/commons/thumb/8/89/HD_transparent_picture.png/512px-HD_transparent_picture.png">
-<meta name="theme-color" content="#0b0f14">
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Date Calendar OCR" />
+<meta name="theme-color" content="#0b0f14" />
 
 <title>Snap → Sheet: Date Calendar</title>
 
 <style>
-body {
-  font-family: system-ui, sans-serif;
-  margin: 0;
-  background: #f4f4f4;
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-}
-header {
-  padding: 12px;
-  background: #0b0f14;
-  color: white;
-  text-align: center;
-  font-size: 18px;
-}
-main {
-  flex: 1;
-  padding: 10px;
-  overflow-y: auto;
-}
-textarea {
-  width: 100%;
-  height: 200px;
-  padding: 8px;
-  box-sizing: border-box;
-}
-.actions {
-  display: flex;
-  position: sticky;
-  bottom: 0;
-  background: white;
-  border-top: 1px solid #ccc;
-}
-.actions button {
-  flex: 1;
-  padding: 16px;
-  font-size: 16px;
-  border: none;
-  background: #2d88ff;
-  color: white;
-  cursor: pointer;
-}
-.actions button:nth-child(2) { background: #28a745; }
-.actions button:nth-child(3) { background: #ff5722; }
-.actions button:active { opacity: 0.8; }
+  :root {
+    --bg:#0b0f14; --fg:#e7f0f2; --muted:#9fb2ba;
+    --accent:#2dd4bf; --accent2:#22c55e;
+    --warn:#f59e0b; --err:#ef4444;
+    --card:#121a22; --input:#0f1720; --border:#1f2a36;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; height: 100%; background: var(--bg); color: var(--fg);
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  }
+  header { padding: 12px 14px; background: #0b0f14; font-size: 18px; text-align: center; }
+  main { padding: 12px; padding-bottom: 80px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 14px; margin: 12px 0; }
+  label { display:block; font-size: 13px; color: var(--muted); margin: 8px 0 6px; }
+  input[type="text"], textarea {
+    width: 100%; border: 1px solid var(--border); background: var(--input); color: var(--fg);
+    border-radius: 12px; padding: 12px; font-size: 16px;
+  }
+  textarea { min-height: 180px; resize: vertical; }
+  .preview { width: 100%; max-height: 320px; object-fit: contain; border-radius: 12px; border: 1px solid var(--border); background:#0a1016; }
+  .helper { color: var(--muted); font-size: 12px; }
+  .status { margin-top: 8px; font-size: 14px; }
+  .ok { color: var(--accent2); } .warn { color: var(--warn); } .err { color: var(--err); }
+
+  /* Sticky bottom action bar */
+  .actions {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+    background: #0b0f14; border-top: 1px solid var(--border);
+    padding: 8px;
+  }
+  .actions .row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .btn {
+    appearance: none; border: 1px solid var(--border); background: #12202a; color: #e7f0f2;
+    border-radius: 12px; padding: 12px; font-size: 15px; font-weight: 700;
+  }
+  .btn.primary { background: var(--accent); color:#04221d; border-color: #0e3e37; }
+  .btn:active { opacity: .85; }
+  @media (max-width: 420px) {
+    .actions .row { grid-template-columns: repeat(2, 1fr); }
+  }
 </style>
 </head>
 <body>
@@ -66,57 +61,159 @@ textarea {
 <header>📅 Date Calendar OCR</header>
 
 <main>
-  <input type="file" id="imageUpload" accept="image/*" capture="environment">
-  <textarea id="ocrOutput" placeholder="OCR result will appear here..."></textarea>
+  <section class="card">
+    <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+      <!-- Camera (Snap) -->
+      <input id="imageSnap" type="file" accept="image/*" capture="environment" style="display:none" />
+      <!-- Gallery (Camera roll) -->
+      <input id="imageGallery" type="file" accept="image/*" style="display:none" />
+      <button class="btn" id="btnSnap">📷 Snap</button>
+      <button class="btn" id="btnGallery">🖼 Gallery</button>
+      <button class="btn" id="btnOCR">🔎 OCR</button>
+    </div>
+    <div id="ocrStatus" class="status"></div>
+    <div id="imgWrap" style="display:none; margin-top:10px;">
+      <img id="preview" class="preview" alt="preview" />
+    </div>
+    <label for="ocrOutput">OCR Text</label>
+    <textarea id="ocrOutput" placeholder="OCR result will appear here..."></textarea>
+    <p class="helper">Tip: After OCR, you can edit the text before sending. Notes will be auto-trimmed to ≤ 5 words.</p>
+  </section>
+
+  <section class="card">
+    <details>
+      <summary>Connection settings (save your Google Apps Script URL)</summary>
+      <label for="scriptUrl">Web App URL (ends with <code>/exec</code>)</label>
+      <input id="scriptUrl" type="text" placeholder="https://script.google.com/macros/s/…/exec" />
+      <div class="status" id="saveStatus"></div>
+      <p class="helper">Saved on this device only.</p>
+    </details>
+  </section>
+
+  <section class="card" id="sendStatusWrap" style="display:none">
+    <div id="sendStatus" class="status"></div>
+  </section>
 </main>
 
 <div class="actions">
-  <button onclick="document.getElementById('imageUpload').click()">📷 Snap / Upload</button>
-  <button onclick="runOCR()">🔍 OCR</button>
-  <button onclick="sendToSheet()">📤 Send</button>
+  <div class="row">
+    <button class="btn" id="actSnap">📷 Snap</button>
+    <button class="btn" id="actGallery">🖼 Gallery</button>
+    <button class="btn" id="actOCR">🔍 OCR</button>
+    <button class="btn primary" id="actSend">📤 Send</button>
+  </div>
 </div>
 
+<!-- Tesseract (kept same major as your working version) -->
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.1.1/dist/tesseract.min.js"></script>
 <script>
-async function runOCR() {
-  const file = document.getElementById('imageUpload').files[0];
-  if (!file) return alert("Please select an image first.");
-  const { data: { text } } = await Tesseract.recognize(file, 'eng');
-  document.getElementById('ocrOutput').value = text.trim();
-}
+  // --- Local storage for endpoint ---
+  const urlInput = document.getElementById('scriptUrl');
+  const saveStatus = document.getElementById('saveStatus');
+  function loadEndpoint() { return localStorage.getItem('dateCalScriptUrl') || ''; }
+  function saveEndpoint(url) { localStorage.setItem('dateCalScriptUrl', url); saveStatus.textContent = 'Saved ✔'; setTimeout(()=>saveStatus.textContent='', 1500); }
+  urlInput.value = loadEndpoint();
+  urlInput.addEventListener('change', () => saveEndpoint(urlInput.value.trim()));
 
-async function sendToSheet() {
-  const text = document.getElementById('ocrOutput').value;
-  if (!text) return alert("No OCR text found.");
-  
-  // Simple parser placeholders — replace with your own extraction logic
-  const event = text.split('\n')[0] || '';
-  const location = text.split('\n')[1] || '';
-  const date = new Date().toDateString();
-  const startTime = '';
-  const endTime = '';
-  const allDay = true;
-  const notes = text.split('\n').slice(2, 4).join(' ').slice(0, 30);
-
-  const payload = {
-    event, location, date, startTime, endTime, allDay, notes
+  // --- Elements ---
+  const els = {
+    imageSnap: document.getElementById('imageSnap'),
+    imageGallery: document.getElementById('imageGallery'),
+    btnSnap: document.getElementById('btnSnap'),
+    btnGallery: document.getElementById('btnGallery'),
+    btnOCR: document.getElementById('btnOCR'),
+    actSnap: document.getElementById('actSnap'),
+    actGallery: document.getElementById('actGallery'),
+    actOCR: document.getElementById('actOCR'),
+    actSend: document.getElementById('actSend'),
+    preview: document.getElementById('preview'),
+    imgWrap: document.getElementById('imgWrap'),
+    ocrStatus: document.getElementById('ocrStatus'),
+    ocrOutput: document.getElementById('ocrOutput'),
+    sendStatusWrap: document.getElementById('sendStatusWrap'),
+    sendStatus: document.getElementById('sendStatus'),
   };
 
-  try {
-    const res = await fetch("https://script.google.com/macros/s/AKfycbxZqEc4dO0XS6QJG2CE2pBm7Fu0ALVhKYOdzv6Vnm8NaKaFC8ma_lpYj1-NFT6las2M2w/exec", {
-      method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
-    alert("Row appended ✔");
-  } catch (err) {
-    console.error(err);
-    alert("Error sending to sheet.");
+  let imgFile = null;
+  function setImage(file) {
+    imgFile = file;
+    const url = URL.createObjectURL(file);
+    els.preview.src = url;
+    els.imgWrap.style.display = 'block';
+    els.ocrStatus.textContent = '';
   }
-}
+
+  // Buttons → inputs
+  els.btnSnap.addEventListener('click', ()=> els.imageSnap.click());
+  els.btnGallery.addEventListener('click', ()=> els.imageGallery.click());
+  els.actSnap.addEventListener('click', ()=> els.imageSnap.click());
+  els.actGallery.addEventListener('click', ()=> els.imageGallery.click());
+
+  // Input change handlers
+  els.imageSnap.addEventListener('change', ()=> { if (els.imageSnap.files[0]) setImage(els.imageSnap.files[0]); });
+  els.imageGallery.addEventListener('change', ()=> { if (els.imageGallery.files[0]) setImage(els.imageGallery.files[0]); });
+
+  // Date: “Tue, July 1, 2025”
+  function fmtDateHuman(d) {
+    const days = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+    const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+    return `${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+  }
+
+  // Notes ≤ 5 words
+  function briefNotes(text) {
+    return text.trim().replace(/\s+/g,' ').split(' ').slice(0,5).join(' ');
+  }
+
+  async function runOCR() {
+    try {
+      if (!imgFile) return alert('Pick a photo first (Snap or Gallery).');
+      els.ocrStatus.textContent = 'Running OCR…';
+      const { data: { text } } = await Tesseract.recognize(imgFile, 'eng');
+      els.ocrOutput.value = (text || '').trim();
+      els.ocrStatus.textContent = 'OCR complete ✔';
+    } catch (e) {
+      els.ocrStatus.textContent = 'OCR error: ' + e.message;
+    }
+  }
+  els.btnOCR.addEventListener('click', runOCR);
+  els.actOCR.addEventListener('click', runOCR);
+
+  async function sendToSheet() {
+    const endpoint = (urlInput.value || loadEndpoint()).trim();
+    if (!endpoint) return alert('Add your Google Apps Script Web App URL in Settings first.');
+    const raw = els.ocrOutput.value.trim();
+    if (!raw) return alert('No OCR text yet.');
+
+    // Placeholder parsing (we can upgrade next): first line title, second line location
+    const lines = raw.split('\n').map(s => s.trim()).filter(Boolean);
+    const event = lines[0] || '';
+    const location = lines[1] || '';
+    const date = fmtDateHuman(new Date());  // replace with parsed date later
+    const startTime = '';                   // mutually exclusive with allDay (when we parse times)
+    const endTime = '';
+    const allDay = true;
+    const notes = briefNotes(raw);
+
+    const payload = { event, location, date, startTime, endTime, allDay, notes };
+
+    els.sendStatusWrap.style.display = 'block';
+    els.sendStatus.textContent = 'Sending…';
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json' },  // normal CORS (no 'no-cors')
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      els.sendStatus.innerHTML = '<span class="ok">Row appended ✔</span>';
+    } catch (e) {
+      els.sendStatus.innerHTML = '<span class="err">Send failed:</span> ' + e.message +
+        '<div class="helper">If this persists, ensure your Apps Script returns CORS headers and access is set to “Anyone”.</div>';
+    }
+  }
+  document.getElementById('actSend').addEventListener('click', sendToSheet);
 </script>
 
 </body>
 </html>
-
