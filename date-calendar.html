@@ -1,254 +1,382 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-<meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="apple-mobile-web-app-title" content="Date Calendar OCR" />
-<meta name="theme-color" content="#0b0f14" />
-<title>Snap → Sheet: Date Calendar</title>
-<style>
-  :root {
-    --bg:#0b0f14; --fg:#e7f0f2; --muted:#9fb2ba;
-    --accent:#2dd4bf; --accent2:#22c55e;
-    --warn:#f59e0b; --err:#ef4444;
-    --card:#121a22; --input:#0f1720; --border:#1f2a36;
-  }
-  * { box-sizing: border-box; }
-  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg);
-    font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
-  header { padding: 12px 14px; background: #0b0f14; font-size: 18px; text-align: center; }
-  main { padding: 12px; padding-bottom: 80px; }
-  .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 14px; margin: 12px 0; }
-  label { display:block; font-size: 13px; color: var(--muted); margin: 8px 0 6px; }
-  input[type="text"], textarea {
-    width: 100%; border: 1px solid var(--border); background: var(--input); color: var(--fg);
-    border-radius: 12px; padding: 12px; font-size: 16px; }
-  textarea { min-height: 180px; resize: vertical; }
-  .preview { width: 100%; max-height: 320px; object-fit: contain; border-radius: 12px; border: 1px solid var(--border); background:#0a1016; }
-  .helper { color: var(--muted); font-size: 12px; }
-  .status { margin-top: 8px; font-size: 14px; }
-  .ok { color: var(--accent2); } .warn { color: var(--warn); } .err { color: var(--err); }
-  .actions { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: #0b0f14;
-    border-top: 1px solid var(--border); padding: 8px; }
-  .actions .row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-  .btn { appearance: none; border: 1px solid var(--border); background: #12202a; color: #e7f0f2;
-    border-radius: 12px; padding: 12px; font-size: 15px; font-weight: 700; }
-  .btn.primary { background: var(--accent); color:#04221d; border-color: #0e3e37; }
-  .btn:active { opacity: .85; }
-  @media (max-width: 420px) { .actions .row { grid-template-columns: repeat(2, 1fr); } }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <title>Snap ➜ Sheet: Date Calendar</title>
+  <link rel="preconnect" href="https://unpkg.com"/>
+  <meta name="theme-color" content="#0b0f14" />
+  <!-- iOS standalone + status bar -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Date Calendar" />
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='26' ry='26' fill='%230b0f14'/%3E%3Ctext x='50%25' y='58%25' dominant-baseline='middle' text-anchor='middle' font-size='72' fill='%232dd4bf'%3E%F0%9F%93%85%3C/text%3E%3C/svg%3E" />
+  <!-- Minimal inline manifest -->
+  <link rel="manifest" href='data:application/json,{"name":"Date Calendar","short_name":"DateCal","start_url":"./","display":"standalone","background_color":"#0b0f14","theme_color":"#0b0f14"}' />
+  <style>
+    :root { --bg:#0b0f14; --fg:#e7f0f2; --muted:#9fb2ba; --accent:#2dd4bf; --accent2:#22c55e; --warn:#f59e0b; --err:#ef4444; --card:#121a22; --input:#0f1720; --border:#1f2a36; }
+    *{box-sizing:border-box}
+    html,body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial}
+    header{position:sticky;top:0;z-index:5;background:linear-gradient(180deg,#0b0f14,#0b0f14e6 70%,#0b0f1400);backdrop-filter:saturate(1.2) blur(2px);}    
+    h1{margin:0;padding:14px 16px 8px;font-size:20px;display:flex;align-items:center;gap:10px}
+    h1 span.logo{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#60a5fa)}
+    main{padding:12px;max-width:920px;margin:0 auto}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;margin:12px 0;box-shadow:0 6px 20px #00000033}
+    .row{display:flex;flex-wrap:wrap;gap:10px}
+    .col{flex:1 1 240px;min-width:220px}
+    label{display:block;font-size:13px;color:var(--muted);margin:10px 0 6px}
+    input[type="text"], textarea{width:100%;border:1px solid var(--border);background:var(--input);color:var(--fg);border-radius:12px;padding:14px;font-size:16px}
+    input[type="checkbox"]{transform:scale(1.3);}    
+    textarea{min-height:96px;resize:vertical}
+    .btn{appearance:none;border:0;border-radius:14px;padding:14px 16px;font-weight:700;color:#00110e;background:var(--accent);cursor:pointer;min-height:44px}
+    .btn.secondary{background:#334155;color:#e5eef0;border:1px solid var(--border)}
+    .btn.warn{background:var(--warn);color:#0b0b00}
+    .btn:disabled{opacity:.6;cursor:not-allowed}
+    .toolbar{display:flex;gap:10px;flex-wrap:wrap}
+    .status{font-size:14px;margin-top:10px}
+    .ok{color:var(--accent2)} .warnText{color:var(--warn)} .err{color:var(--err)}
+    .preview{width:100%;max-height:320px;object-fit:contain;border-radius:12px;border:1px solid var(--border);background:#0a1016}
+    small.helper{display:block;color:var(--muted);margin-top:6px}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    @media (max-width:560px){.grid2{grid-template-columns:1fr}}
+    table{width:100%;border-collapse:collapse}
+    td,th{border:1px solid var(--border);padding:8px}
+    th{background:#0e1620}
+    /* Sticky action bar for mobile */
+    .fabbar{position:sticky;bottom:0;z-index:10;background:linear-gradient(180deg,#0b0f1400,#0b0f14 30%);padding:8px 4px}
+    .fabbar .toolbar{justify-content:space-between}
+  </style>
+  <script src="https://unpkg.com/tesseract.js@5.1.0/dist/tesseract.min.js"></script>
+  <script src="https://unpkg.com/luxon@3.4.4/build/global/luxon.min.js"></script>
 </head>
 <body>
-<header>📅 Date Calendar OCR</header>
+  <header>
+    <h1><span class="logo">📅</span> Snap → Google Sheet: Date Calendar</h1>
+  </header>
 
-<main>
-  <section class="card">
-    <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
-      <input id="imageSnap" type="file" accept="image/*" capture="environment" style="display:none" />
-      <input id="imageGallery" type="file" accept="image/*" style="display:none" />
-      <button class="btn" id="btnSnap">📷 Snap</button>
-      <button class="btn" id="btnGallery">🖼 Gallery</button>
-      <button class="btn" id="btnOCR">🔎 OCR</button>
+  <main>
+    <!-- Capture / Upload -->
+    <section class="card" id="captureCard">
+      <div class="toolbar">
+        <label class="btn" for="file">📷 Snap (Camera)</label>
+        <input id="file" type="file" accept="image/*" capture="environment" hidden />
+        <button id="galleryBtn" class="btn secondary" type="button">🖼 Upload from Gallery</button>
+        <input id="galleryFile" type="file" accept="image/*" hidden />
+        <button id="ocrBtn" class="btn" type="button" disabled>🔎 Run OCR</button>
+        <button id="clearBtn" class="btn secondary" type="button">🧹 Clear</button>
+      </div>
+      <small class="helper">Use Snap for camera, Gallery for camera roll.</small>
+      <div id="imgWrap" style="margin-top:10px;display:none">
+        <img id="preview" class="preview" alt="preview" />
+      </div>
+      <div id="ocrStatus" class="status"></div>
+
+      <label for="rawText">Extracted / Provided Text</label>
+      <textarea id="rawText" placeholder="OCR text will appear here. You can also paste your own text."></textarea>
+
+      <div class="toolbar" style="margin-top:10px">
+        <button id="parseBtn" class="btn" type="button">🧠 Parse → Fields</button>
+        <button id="runTests" class="btn secondary" type="button" title="Run built-in parsing tests">🧪 Run Parsing Tests</button>
+      </div>
+      <div id="testResults" class="status"></div>
+    </section>
+
+    <!-- Event Fields -->
+    <section class="card">
+      <h3>Event Details → Date Calendar</h3>
+      <div class="grid2">
+        <div class="col">
+          <label for="event">Event</label>
+          <input id="event" type="text" />
+        </div>
+        <div class="col">
+          <label for="location">Location</label>
+          <input id="location" type="text" />
+        </div>
+        <div class="col">
+          <label for="date">Date (Tue, July 1, 2025)</label>
+          <input id="date" type="text" />
+        </div>
+        <div class="col">
+          <label for="startTime">Start Time (h:mm AM/PM)</label>
+          <input id="startTime" type="text" />
+        </div>
+        <div class="col">
+          <label for="endTime">End Time (h:mm AM/PM)</label>
+          <input id="endTime" type="text" />
+        </div>
+        <div class="col" style="display:flex;align-items:flex-end;gap:10px">
+          <input id="allDay" type="checkbox" />
+          <label for="allDay">All Day (clears times)</label>
+        </div>
+      </div>
+
+      <label for="notes">Notes (≤5 words)</label>
+      <textarea id="notes" maxlength="48"></textarea>
+
+      <div class="toolbar" style="margin-top:10px">
+        <button id="sendBtn" class="btn" type="button">➡️ Send to Google Sheet</button>
+      </div>
+      <div id="sendStatus" class="status"></div>
+
+      <details style="margin-top:12px">
+        <summary>Connection settings (Google Apps Script web app)</summary>
+        <div class="card" style="background:#0c141b">
+          <label for="webapp">Web App URL</label>
+          <input id="webapp" type="text" placeholder="https://script.google.com/macros/s/…/exec" />
+          <small class="helper">Saved locally on this device.</small>
+        </div>
+      </details>
+    </section>
+
+    <div class="fabbar">
+      <div class="toolbar">
+        <button id="quickOCR" class="btn secondary" type="button">📷 OCR</button>
+        <button id="quickParse" class="btn secondary" type="button">🧠 Parse</button>
+        <button id="quickSend" class="btn" type="button">➕ Add Row</button>
+      </div>
     </div>
-    <div id="ocrStatus" class="status"></div>
-    <div id="imgWrap" style="display:none; margin-top:10px;">
-      <img id="preview" class="preview" alt="preview" />
-    </div>
-    <label for="ocrOutput">OCR Text</label>
-    <textarea id="ocrOutput" placeholder="OCR result will appear here..."></textarea>
-    <p class="helper">After OCR, you can edit the text before sending. Notes will be auto-trimmed to ≤ 5 words.</p>
-  </section>
+  </main>
 
-  <section class="card">
-    <details>
-      <summary>Connection settings (save your Google Apps Script URL)</summary>
-      <label for="scriptUrl">Web App URL (ends with <code>/exec</code>)</label>
-      <input id="scriptUrl" type="text" placeholder="https://script.google.com/macros/s/…/exec" />
-      <div class="status" id="saveStatus"></div>
-      <p class="helper">Saved on this device only.</p>
-    </details>
-  </section>
+  <script>
+    // ---- Luxon alias (avoid DateTime collisions) ----
+    const LuxonDT = (typeof window !== 'undefined' && window.__LuxonDT) ? window.__LuxonDT : luxon.DateTime;
+    if (typeof window !== 'undefined') { window.__LuxonDT = LuxonDT; }
 
-  <section class="card" id="sendStatusWrap" style="display:none">
-    <div id="sendStatus" class="status"></div>
-  </section>
-</main>
+    // ---- Lightweight service worker (offline + keeps same URL) ----
+    (function(){
+      if(!('serviceWorker' in navigator)) return;
+      const swCode = `self.addEventListener('install',e=>self.skipWaiting());self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));self.addEventListener('fetch',e=>{e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));});`;
+      const blob = new Blob([swCode], {type:'text/javascript'});
+      const url = URL.createObjectURL(blob);
+      navigator.serviceWorker.register(url).catch(()=>{});
+    })();
 
-<div class="actions">
-  <div class="row">
-    <button class="btn" id="actSnap">📷 Snap</button>
-    <button class="btn" id="actGallery">🖼 Gallery</button>
-    <button class="btn" id="actOCR">🔍 OCR</button>
-    <button class="btn primary" id="actSend">📤 Send</button>
-  </div>
-</div>
+    // ---- Element refs ----
+    const els = {
+      file: document.getElementById('file'),
+      galleryFile: document.getElementById('galleryFile'),
+      galleryBtn: document.getElementById('galleryBtn'),
+      ocrBtn: document.getElementById('ocrBtn'),
+      clearBtn: document.getElementById('clearBtn'),
+      preview: document.getElementById('preview'),
+      imgWrap: document.getElementById('imgWrap'),
+      ocrStatus: document.getElementById('ocrStatus'),
+      rawText: document.getElementById('rawText'),
+      parseBtn: document.getElementById('parseBtn'),
+      runTests: document.getElementById('runTests'),
+      testResults: document.getElementById('testResults'),
+      event: document.getElementById('event'),
+      location: document.getElementById('location'),
+      date: document.getElementById('date'),
+      startTime: document.getElementById('startTime'),
+      endTime: document.getElementById('endTime'),
+      allDay: document.getElementById('allDay'),
+      notes: document.getElementById('notes'),
+      sendBtn: document.getElementById('sendBtn'),
+      sendStatus: document.getElementById('sendStatus'),
+      webapp: document.getElementById('webapp'),
+    };
 
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.1.1/dist/tesseract.min.js"></script>
-<script>
-  // Endpoint storage
-  const urlInput = document.getElementById('scriptUrl');
-  const saveStatus = document.getElementById('saveStatus');
-  function loadEndpoint(){ return localStorage.getItem('dateCalScriptUrl') || ''; }
-  function saveEndpoint(u){ localStorage.setItem('dateCalScriptUrl', u); saveStatus.textContent='Saved ✔'; setTimeout(()=>saveStatus.textContent='',1500); }
-  urlInput.value = loadEndpoint();
-  urlInput.addEventListener('change', ()=> saveEndpoint(urlInput.value.trim()));
+    // Save/load endpoint locally
+    els.webapp.value = localStorage.getItem('dateCalWebApp') || '';
+    els.webapp.addEventListener('change', ()=> localStorage.setItem('dateCalWebApp', els.webapp.value.trim()));
 
-  // Elements
-  const els = {
-    imageSnap: document.getElementById('imageSnap'),
-    imageGallery: document.getElementById('imageGallery'),
-    btnSnap: document.getElementById('btnSnap'),
-    btnGallery: document.getElementById('btnGallery'),
-    btnOCR: document.getElementById('btnOCR'),
-    actSnap: document.getElementById('actSnap'),
-    actGallery: document.getElementById('actGallery'),
-    actOCR: document.getElementById('actOCR'),
-    actSend: document.getElementById('actSend'),
-    preview: document.getElementById('preview'),
-    imgWrap: document.getElementById('imgWrap'),
-    ocrStatus: document.getElementById('ocrStatus'),
-    ocrOutput: document.getElementById('ocrOutput'),
-    sendStatusWrap: document.getElementById('sendStatusWrap'),
-    sendStatus: document.getElementById('sendStatus'),
-  };
-
-  let imgFile = null;
-  function setImage(file){
-    imgFile = file;
-    const url = URL.createObjectURL(file);
-    els.preview.src = url;
-    els.imgWrap.style.display = 'block';
-    els.ocrStatus.textContent = '';
-  }
-
-  // Buttons → inputs
-  els.btnSnap.addEventListener('click', ()=> els.imageSnap.click());
-  els.btnGallery.addEventListener('click', ()=> els.imageGallery.click());
-  els.actSnap.addEventListener('click', ()=> els.imageSnap.click());
-  els.actGallery.addEventListener('click', ()=> els.imageGallery.click());
-
-  // Inputs
-  els.imageSnap.addEventListener('change', ()=> { if(els.imageSnap.files[0]) setImage(els.imageSnap.files[0]); });
-  els.imageGallery.addEventListener('change', ()=> { if(els.imageGallery.files[0]) setImage(els.imageGallery.files[0]); });
-
-  // Format date “Tue, July 1, 2025”
-  function fmtDateHuman(d){
-    const days = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-    const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-    return `${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
-  }
-  // Notes ≤ 5 words
-  function briefNotes(text){ return text.trim().replace(/\\s+/g,' ').split(' ').slice(0,5).join(' '); }
-
-  // --- Real parsing (dates & times) ---
-  function parseDateFromText(text){
-    const t = text.replace(/\\u2013|\\u2014|—|–/g,'-');
-    const monthNameRe = /(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)?,?\\s*(January|February|March|April|May|June|July|August|September|October|November|December)\\s+(\\d{1,2}),?\\s+(\\d{4})/i;
-    const m1 = t.match(monthNameRe);
-    if(m1){
-      const monthIndex = ["January","February","March","April","May","June","July","August","September","October","November","December"].findIndex(m=>m.toLowerCase()===m1[1].toLowerCase());
-      const d = new Date(parseInt(m1[3],10), monthIndex, parseInt(m1[2],10));
-      if(!isNaN(d)) return d;
+    // ---- Image handling ----
+    let imgBlob = null;
+    function setImage(file){
+      imgBlob = file;
+      const url = URL.createObjectURL(file);
+      els.preview.src = url;
+      els.imgWrap.style.display = 'block';
+      els.ocrBtn.disabled = false;
     }
-    const numRe = /\\b(\\d{1,2})[\\/\\-](\\d{1,2})[\\/\\-](\\d{2,4})\\b/;
-    const m2 = t.match(numRe);
-    if(m2){
-      let y = parseInt(m2[3],10); if(y<100) y += 2000;
-      const d = new Date(y, parseInt(m2[1],10)-1, parseInt(m2[2],10));
-      if(!isNaN(d)) return d;
-    }
-    const isoRe = /\\b(\\d{4})-(\\d{2})-(\\d{2})\\b/;
-    const m3 = t.match(isoRe);
-    if(m3){
-      const d = new Date(parseInt(m3[1],10), parseInt(m3[2],10)-1, parseInt(m3[3],10));
-      if(!isNaN(d)) return d;
-    }
-    return null;
-  }
-  function format12h(h24, min){ const ap = h24>=12 ? 'PM' : 'AM'; let h=h24%12; if(h===0) h=12; const mm=String(min).padStart(2,'0'); return `${h}:${mm} ${ap}`; }
-  function parseTimeToken(tok){
-    let s = tok.trim().toLowerCase().replace(/\\./g,'');
-    s = s.replace(/^(\\d{1,2})(\\d{2})$/, '$1:$2'); // 1730 → 17:30
-    const m = s.match(/^(\\d{1,2})(?::(\\d{2}))?\\s*(am|pm)?$/);
-    if(!m){
-      const m24 = s.match(/^(\\d{1,2})(?::(\\d{2}))$/);
-      if(m24){ return format12h(parseInt(m24[1],10), parseInt(m24[2]||'0',10)); }
-      return null;
-    }
-    let h = parseInt(m[1],10), min = parseInt(m[2]||'0',10), ap = m[3];
-    if(!ap){ if(h>=13){ return format12h(h,min); } ap='pm'; }
-    if(ap==='am' && h===12) h=0; if(ap==='pm' && h<12) h+=12; return format12h(h,min);
-  }
-  function parseTimesFromText(text){
-    const t = text.replace(/\\u2013|\\u2014|—|–/g,'-');
-    const rangeRe = /(\\d{1,2}(?::?\\d{2})?\\s*(?:am|pm)?)\\s*(?:-|\\bto\\b)\\s*(\\d{1,2}(?::?\\d{2})?\\s*(?:am|pm)?)/i;
-    const mr = t.match(rangeRe);
-    if(mr){ const a=parseTimeToken(mr[1]); const b=parseTimeToken(mr[2]); if(a||b) return {start:a||'', end:b||''}; }
-    const singleRe = /(\\b\\d{1,2}(?::?\\d{2})?\\s*(?:am|pm)\\b|\\b\\d{1,2}:\\d{2}\\b|\\b\\d{3,4}\\b)/i;
-    const ms = t.match(singleRe); if(ms){ const a=parseTimeToken(ms[1]); if(a) return {start:a, end:''}; }
-    return {start:'', end:''};
-  }
-  function extractFields(raw){
-    const lines = raw.split('\\n').map(s=>s.trim()).filter(Boolean);
-    const event = lines[0] || '';
-    const location = lines[1] || '';
-    const dObj = parseDateFromText(raw);
-    const date = dObj ? fmtDateHuman(dObj) : fmtDateHuman(new Date());
-    const {start, end} = parseTimesFromText(raw);
-    const allDay = !(start || end);
-    const notes = briefNotes(raw);
-    return { event, location, date, startTime:start, endTime:end, allDay, notes };
-  }
+    document.getElementById('file').addEventListener('change', ()=>{ if(els.file.files[0]) setImage(els.file.files[0]); });
+    els.galleryBtn.addEventListener('click', ()=> els.galleryFile.click());
+    els.galleryFile.addEventListener('change', ()=>{ if(els.galleryFile.files[0]) setImage(els.galleryFile.files[0]); });
+    els.clearBtn.addEventListener('click', ()=>{ imgBlob=null; els.imgWrap.style.display='none'; els.rawText.value=''; els.ocrStatus.textContent=''; });
 
-  async function runOCR(){
-    try{
-      if(!imgFile) return alert('Pick a photo first (Snap or Gallery).');
+    // ---- OCR (tuned to reduce junk) ----
+    els.ocrBtn.addEventListener('click', async ()=>{
+      if(!imgBlob) return;
       els.ocrStatus.textContent = 'Running OCR…';
-      const { data: { text } } = await Tesseract.recognize(imgFile, 'eng');
-      els.ocrOutput.value = (text || '').trim();
-      els.ocrStatus.textContent = 'OCR complete ✔';
-    }catch(e){
-      els.ocrStatus.textContent = 'OCR error: ' + e.message;
+      try{
+        const { data } = await Tesseract.recognize(imgBlob, 'eng', {
+          tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789:,.-/()&\n ',
+          preserve_interword_spaces: '1',
+          psm: 6
+        });
+        const raw = (data.text||'').trim();
+        els.rawText.value = smartClean(raw);
+        els.ocrStatus.textContent = 'OCR complete';
+      }catch(e){ els.ocrStatus.textContent = 'OCR error: '+e.message; }
+    });
+
+    // ---- Cleaning & parsing helpers ----
+    function smartClean(t){
+      let s = t.replace(/[\u0000-\u001f\u007f]/g,' ')
+               .replace(/[^A-Za-z0-9:,\.\/()&\-\n ]/g,' ')
+               .replace(/[|_]{2,}/g,' ')
+               .replace(/\s{2,}/g,' ');
+      s = s.replace(/\bAUGVST\b/gi,'AUGUST').replace(/\bORE\b/gi,'OR');
+      const lines = s.split('\n').map(l=>l.trim())
+        .filter(Boolean)
+        .filter(l => (l.replace(/[^A-Za-z]/g,'').length / Math.max(1,l.length)) > 0.35)
+        .filter(l => l.length >= 3);
+      return lines.join('\n');
     }
-  }
-  els.btnOCR.addEventListener('click', runOCR);
-  els.actOCR.addEventListener('click', runOCR);
 
-  async function sendToSheet(){
-    const endpoint = (urlInput.value || loadEndpoint()).trim();
-    if(!endpoint) return alert('Add your Google Apps Script Web App URL in Settings first.');
-    const raw = els.ocrOutput.value.trim();
-    if(!raw) return alert('No OCR text yet.');
+    function fmtDateHuman(d){
+      const days=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+      const months=["January","February","March","April","May","June","July","August","September","October","November","December"];
+      return `${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+    }
 
-    const fields = extractFields(raw);
-    if(fields.allDay){ fields.startTime=''; fields.endTime=''; } // XOR times
+    function normalizeDateStr(s){
+      if(!s) return '';
+      const tryFormats = ['EEE, LLL d, yyyy','EEE, LLLL d, yyyy','LLLL d, yyyy','LLL d, yyyy','M/d/yyyy','M/d/yy','yyyy-MM-dd'];
+      let dt = null;
+      for(const f of tryFormats){ dt = LuxonDT.fromFormat(s,f,{locale:'en'}); if(dt.isValid) break; }
+      if(!dt || !dt.isValid){ const js = new Date(s); if(!isNaN(js)) dt = LuxonDT.fromJSDate(js); }
+      if(dt && dt.isValid){
+        const now = LuxonDT.now();
+        if (dt.year < now.year - 1 || dt.year > now.year + 2) { dt = dt.set({year: now.year}); if (dt < now.startOf('day')) dt = dt.plus({years:1}); }
+        return dt.toFormat('EEE, LLLL d, yyyy');
+      }
+      return s;
+    }
 
-    els.sendStatusWrap.style.display = 'block';
-    els.sendStatus.textContent = 'Sending…';
-    try{
-      const res = await fetch(endpoint, {
-        method:'POST',
-        headers:{ 'Content-Type':'application/json' },
-        body: JSON.stringify({
-          event: fields.event,
-          location: fields.location,
-          date: fields.date,
-          startTime: fields.startTime,
-          endTime: fields.endTime,
-          allDay: fields.allDay,
-          notes: fields.notes
-        })
+    function format12h(h24,min){ const ap=h24>=12?'PM':'AM'; let h=h24%12; if(h===0) h=12; const mm=String(min).padStart(2,'0'); return `${h}:${mm} ${ap}`; }
+    function parseTimeToken(tok){
+      let s = tok.trim().toLowerCase().replace(/\./g,'').replace(/^(\d{1,2})(\d{2})$/,'$1:$2');
+      const m = s.match(/^(\d{1,2})(?::(\d{2}))?\s*(am|pm)?$/);
+      if(!m){ const m24=s.match(/^(\d{1,2})(?::(\d{2}))$/); if(m24){ return format12h(parseInt(m24[1],10), parseInt(m24[2]||'0',10)); } return null; }
+      let h=parseInt(m[1],10), min=parseInt(m[2]||'0',10), ap=m[3];
+      if(!ap){ if(h>=13) return format12h(h,min); ap='pm'; }
+      if(ap==='am' && h===12) h=0; if(ap==='pm' && h<12) h+=12; return format12h(h,min);
+    }
+    function parseTimesFromText(text){
+      const t = text.replace(/\u2013|\u2014|—|–/g,'-');
+      const range = t.match(/(\d{1,2}(?::?\d{2})?\s*(?:am|pm)?)\s*(?:-|\bto\b)\s*(\d{1,2}(?::?\d{2})?\s*(?:am|pm)?)/i);
+      if(range){ const a=parseTimeToken(range[1]); const b=parseTimeToken(range[2]); if(a||b) return {start:a||'', end:b||''}; }
+      const single = t.match(/(\b\d{1,2}(?::?\d{2})?\s*(?:am|pm)\b|\b\d{1,2}:\d{2}\b|\b\d{3,4}\b)/i);
+      if(single){ const a=parseTimeToken(single[1]); if(a) return {start:a, end:''}; }
+      return {start:'', end:''};
+    }
+
+    function extractBriefNotes(text){ return text.trim().replace(/\s+/g,' ').split(' ').slice(0,5).join(' '); }
+
+    function parseFromRaw(){
+      const cleaned = smartClean(els.rawText.value);
+      const lines = cleaned.split('\n').map(l=>l.trim()).filter(Boolean);
+
+      // Event
+      els.event.value = lines[0] || '';
+
+      // Location: venue/city tokens
+      const locIdx = lines.findIndex(l => /(BEND\b|OR\b|Theatre|Theater|Pub|Park|Amphitheater|Arena|Hall|Center|Club|Bar)/i.test(l));
+      if (locIdx >= 0) {
+        const venue = lines[locIdx];
+        const cityLine = lines[locIdx+1] && /(BEND|OR|, *[A-Z]{2})/i.test(lines[locIdx+1]) ? lines[locIdx+1] : '';
+        els.location.value = (venue + (cityLine?`, ${cityLine}`:'')).replace(/\bORE\b/i,'OR').replace(/\s*,\s*/g,', ').trim();
+      } else {
+        els.location.value = lines[1] || '';
+      }
+
+      // Date
+      const dateLine = lines.find(l=>/(Mon|Tue|Wed|Thu|Fri|Sat|Sun)|\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\b|\b\d{4}-\d{2}-\d{2}\b|\b\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4}\b|January|February|March|April|May|June|July|August|September|October|November|December/i.test(l)) || '';
+      els.date.value = normalizeDateStr(dateLine);
+
+      // Time
+      const timeLine = lines.find(l=>/(\d{1,2}(:\d{2})?\s*(am|pm)\b|\b\d{1,2}:\d{2}\b|\b\d{3,4}\b).*(-|–|—|to)?/i.test(l)) || '';
+      if(/-|–|—|\bto\b/i.test(timeLine)){
+        const parts = timeLine.split(/-|–|—|\bto\b/i).map(x=>parseTimeToken(x)).map(x=>x||'');
+        els.startTime.value = parts[0]||''; els.endTime.value = parts[1]||'';
+        els.allDay.checked = false;
+      } else if(timeLine){
+        const single = parseTimeToken(timeLine);
+        els.startTime.value = single || ''; els.endTime.value = '';
+        els.allDay.checked = !single;
+      } else {
+        els.startTime.value = ''; els.endTime.value = ''; els.allDay.checked = true;
+      }
+
+      els.notes.value = extractBriefNotes(cleaned);
+    }
+
+    els.parseBtn.addEventListener('click', parseFromRaw);
+    document.getElementById('quickOCR').addEventListener('click', ()=> els.ocrBtn.click());
+    document.getElementById('quickParse').addEventListener('click', ()=> els.parseBtn.click());
+    document.getElementById('quickSend').addEventListener('click', ()=> els.sendBtn.click());
+
+    // Enforce All-Day XOR Times
+    function onTimesChanged(){ if(els.startTime.value || els.endTime.value) els.allDay.checked=false; }
+    els.startTime.addEventListener('input', onTimesChanged);
+    els.endTime.addEventListener('input', onTimesChanged);
+    els.allDay.addEventListener('change', ()=>{ if(els.allDay.checked){ els.startTime.value=''; els.endTime.value=''; } });
+
+    // ---- Send to Google Sheet ----
+    els.sendBtn.addEventListener('click', async ()=>{
+      const url = (els.webapp.value||localStorage.getItem('dateCalWebApp')||'').trim();
+      if(!url){ els.sendStatus.innerHTML = '<span class="warnText">Add your Web App URL in the settings above.</span>'; return; }
+
+      if(els.allDay.checked){ els.startTime.value=''; els.endTime.value=''; } // XOR
+
+      const fields = {
+        event: (els.event.value||'').trim(),
+        location: (els.location.value||'').trim(),
+        date: (els.date.value||'').trim(),
+        startTime: (els.startTime.value||'').trim(),
+        endTime: (els.endTime.value||'').trim(),
+        allDay: !!els.allDay.checked,
+        notes: (els.notes.value||'').trim()
+      };
+
+      // Include both key styles for compatibility with either Apps Script
+      const payload = Object.assign({}, fields, {
+        Event: fields.event,
+        Location: fields.location,
+        Date: fields.date,
+        StartTime: fields.startTime,
+        EndTime: fields.endTime,
+        AllDay: fields.allDay,
+        Notes: fields.notes
       });
-      if(!res.ok) throw new Error('HTTP ' + res.status);
-      els.sendStatus.innerHTML = '<span class=\"ok\">Row appended ✔</span>';
-    }catch(e){
-      els.sendStatus.innerHTML = '<span class=\"err\">Send failed:</span> ' + e.message +
-        '<div class=\"helper\">Ensure your Apps Script access is “Anyone” and it returns CORS headers.</div>';
+
+      if(!fields.event || !fields.date){ els.sendStatus.innerHTML = '<span class="warnText">Need at least Event and Date.</span>'; return; }
+
+      els.sendStatus.textContent = 'Sending…'; els.sendBtn.disabled = true;
+      try{
+        const r = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+        const t = await r.text();
+        if(r.ok){ els.sendStatus.innerHTML = '<span class="ok">Row appended ✔</span> ' + (t||''); }
+        else{ els.sendStatus.innerHTML = '<span class="err">Server error:</span> '+(t||r.status); }
+      }catch(e){
+        els.sendStatus.innerHTML = '<span class="err">Network error:</span> '+e.message+'<div class="helper">Ensure your Apps Script access is “Anyone” and returns CORS headers.</div>';
+      }finally{ els.sendBtn.disabled = false; }
+    });
+
+    // ---- Built-in parsing tests ----
+    const tests = [
+      { name:'All-day date only', input:`Oregon Brewers Festival\nTom McCall Waterfront Park, Portland OR\nSaturday July 12, 2025`, expect:{event:'Oregon Brewers Festival', location:'Tom McCall Waterfront Park, Portland OR', date:'Sat, July 12, 2025', start:'', end:'', allDay:true} },
+      { name:'Range with dash', input:`Post Modern Jukebox\nTower Theater, Bend OR\nWed, July 2, 2025\n6:00 PM - 9:00 PM`, expect:{event:'Post Modern Jukebox', location:'Tower Theater, Bend OR', date:'Wed, July 2, 2025', start:'6:00 PM', end:'9:00 PM', allDay:false} },
+      { name:'Range with “to”', input:`Paddleboarding\nOld Mill, Bend OR\nTue, July 1, 2025 5:30 PM to 8:00 PM`, expect:{event:'Paddleboarding', location:'Old Mill, Bend OR', date:'Tue, July 1, 2025', start:'5:30 PM', end:'8:00 PM', allDay:false} },
+      { name:'Single time only', input:`Lake Street Dive\nHayden Homes Amphitheater, Bend OR\nWed, July 2, 2025\n7:15 PM`, expect:{event:'Lake Street Dive', location:'Hayden Homes Amphitheater, Bend OR', date:'Wed, July 2, 2025', start:'7:15 PM', end:'', allDay:false} },
+      { name:'24h to 12h', input:`Concert Night\nHayden Homes Amphitheater\nJuly 3, 2025\n18:30`, expect:{event:'Concert Night', location:'Hayden Homes Amphitheater', date:'Thu, July 3, 2025', start:'6:30 PM', end:'', allDay:false} }
+    ];
+    function escapeHtml(s){ return s.replace(/[&<>]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[ch])); }
+    function runParsingTests(){
+      const rows=[]; let pass=0;
+      for(const t of tests){
+        els.rawText.value = t.input; parseFromRaw();
+        const got = { event:els.event.value, location:els.location.value, date:els.date.value, start:els.startTime.value, end:els.endTime.value, allDay:els.allDay.checked };
+        const ok = got.event===t.expect.event && got.location===t.expect.location && got.date===t.expect.date && got.start===t.expect.start && got.end===t.expect.end && got.allDay===t.expect.allDay;
+        if(ok) pass++;
+        rows.push(`<tr><td>${t.name}</td><td>${ok?'✅ PASS':'❌ FAIL'}</td><td><pre>${escapeHtml(JSON.stringify(got,null,2))}</pre></td><td><pre>${escapeHtml(JSON.stringify(t.expect,null,2))}</pre></td></tr>`);
+      }
+      els.testResults.innerHTML = `<div class="ok">${pass}/${tests.length} tests passed</div><div style="overflow:auto;max-height:380px;margin-top:8px"><table><thead><tr><th>Test</th><th>Result</th><th>Observed</th><th>Expected</th></tr></thead><tbody>${rows.join('')}</tbody></table></div>`;
     }
-  }
-  document.getElementById('actSend').addEventListener('click', sendToSheet);
-</script>
+    els.runTests.addEventListener('click', runParsingTests);
+  </script>
 </body>
 </html>
