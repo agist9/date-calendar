@@ -11,8 +11,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Date Calendar" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='26' ry='26' fill='%230b0f14'/%3E%3Ctext x='50%25' y='58%25' dominant-baseline='middle' text-anchor='middle' font-size='72' fill='%232dd4bf'%3E%F0%9F%93%85%3C/text%3E%3C/svg%3E" />
-  <!-- Minimal inline manifest -->
-  <link rel="manifest" href='data:application/json,{"name":"Date Calendar","short_name":"DateCal","start_url":"./","display":"standalone","background_color":"#0b0f14","theme_color":"#0b0f14"}' />
+  <!-- Minimal inline manifest via data URL (Android Chrome uses this for install prompt) -->
+  <link rel="manifest" href='data:application/json,{"name":"Date Calendar","short_name":"DateCal","start_url":"./","display":"standalone","background_color":"#0b0f14","theme_color":"#0b0f14","icons":[{"src":"data:image/png;base64,iVBORw0KGgo=","sizes":"192x192","type":"image/png"}]}' />
   <style>
     :root { --bg:#0b0f14; --fg:#e7f0f2; --muted:#9fb2ba; --accent:#2dd4bf; --accent2:#22c55e; --warn:#f59e0b; --err:#ef4444; --card:#121a22; --input:#0f1720; --border:#1f2a36; }
     *{box-sizing:border-box}
@@ -25,7 +25,7 @@
     .row{display:flex;flex-wrap:wrap;gap:10px}
     .col{flex:1 1 240px;min-width:220px}
     label{display:block;font-size:13px;color:var(--muted);margin:10px 0 6px}
-    input[type="text"], textarea{width:100%;border:1px solid var(--border);background:var(--input);color:var(--fg);border-radius:12px;padding:14px;font-size:16px}
+    input[type="text"], input[type="date"], input[type="time"], textarea{width:100%;border:1px solid var(--border);background:var(--input);color:var(--fg);border-radius:12px;padding:14px;font-size:16px}
     input[type="checkbox"]{transform:scale(1.3);}    
     textarea{min-height:96px;resize:vertical}
     .btn{appearance:none;border:0;border-radius:14px;padding:14px 16px;font-weight:700;color:#00110e;background:var(--accent);cursor:pointer;min-height:44px}
@@ -33,12 +33,15 @@
     .btn.warn{background:var(--warn);color:#0b0b00}
     .btn:disabled{opacity:.6;cursor:not-allowed}
     .toolbar{display:flex;gap:10px;flex-wrap:wrap}
+    .chips{display:flex;gap:8px;flex-wrap:wrap}
+    .chip{font-size:12px;background:#0f1a20;border:1px dashed var(--border);padding:6px 10px;border-radius:999px;color:var(--muted)}
     .status{font-size:14px;margin-top:10px}
     .ok{color:var(--accent2)} .warnText{color:var(--warn)} .err{color:var(--err)}
     .preview{width:100%;max-height:320px;object-fit:contain;border-radius:12px;border:1px solid var(--border);background:#0a1016}
     small.helper{display:block;color:var(--muted);margin-top:6px}
     .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
     @media (max-width:560px){.grid2{grid-template-columns:1fr}}
+    code.inline{font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;background:#0d141b;border:1px solid var(--border);padding:2px 6px;border-radius:6px}
     table{width:100%;border-collapse:collapse}
     td,th{border:1px solid var(--border);padding:8px}
     th{background:#0e1620}
@@ -53,7 +56,6 @@
   <header>
     <h1><span class="logo">📅</span> Snap → Google Sheet: Date Calendar</h1>
   </header>
-
   <main>
     <!-- Capture / Upload -->
     <section class="card" id="captureCard">
@@ -70,13 +72,11 @@
         <img id="preview" class="preview" alt="preview" />
       </div>
       <div id="ocrStatus" class="status"></div>
-
       <label for="rawText">Extracted / Provided Text</label>
-      <textarea id="rawText" placeholder="OCR text will appear here. You can also paste your own text."></textarea>
-
+      <textarea id="rawText" placeholder="OCR text will appear here."></textarea>
       <div class="toolbar" style="margin-top:10px">
         <button id="parseBtn" class="btn" type="button">🧠 Parse → Fields</button>
-        <button id="runTests" class="btn secondary" type="button" title="Run built-in parsing tests">🧪 Run Parsing Tests</button>
+        <button id="runTests" class="btn secondary" type="button">🧪 Run Parsing Tests</button>
       </div>
       <div id="testResults" class="status"></div>
     </section>
@@ -110,7 +110,6 @@
           <label for="allDay">All Day (clears times)</label>
         </div>
       </div>
-
       <label for="notes">Notes (≤5 words)</label>
       <textarea id="notes" maxlength="48"></textarea>
 
@@ -129,6 +128,23 @@
       </details>
     </section>
 
+    <!-- Sample Apps Script (reference only) -->
+    <section class="card">
+      <h3 style="margin:0 0 8px">Google Apps Script: sample doPost</h3>
+      <pre style="white-space:pre-wrap;background:#0d141b;border:1px solid var(--border);padding:10px;border-radius:10px"><code>function doPost(e){
+  try{
+    var data = JSON.parse(e.postData.contents);
+    var sheet = SpreadsheetApp.getActive().getSheetByName('Date Calendar');
+    var row = [data.Event||'',data.Location||'',data.Date||'',data.StartTime||'',data.EndTime||'',data.AllDay===true,data.Notes||''];
+    sheet.appendRow(row);
+    return ContentService.createTextOutput('OK').setMimeType(ContentService.MimeType.TEXT).setHeader('Access-Control-Allow-Origin','*');
+  }catch(err){
+    return ContentService.createTextOutput('ERR: '+err).setMimeType(ContentService.MimeType.TEXT).setHeader('Access-Control-Allow-Origin','*');
+  }
+}
+function doOptions(){return ContentService.createTextOutput('').setMimeType(ContentService.MimeType.TEXT).setHeader('Access-Control-Allow-Origin','*').setHeader('Access-Control-Allow-Methods','POST,OPTIONS').setHeader('Access-Control-Allow-Headers','Content-Type');}
+</code></pre>
+    </section>
     <div class="fabbar">
       <div class="toolbar">
         <button id="quickOCR" class="btn secondary" type="button">📷 OCR</button>
@@ -139,11 +155,11 @@
   </main>
 
   <script>
-    // ---- Luxon alias (avoid DateTime collisions) ----
+    // ---- Fix: avoid duplicate alias errors if this script is injected multiple times ----
     const LuxonDT = (typeof window !== 'undefined' && window.__LuxonDT) ? window.__LuxonDT : luxon.DateTime;
     if (typeof window !== 'undefined') { window.__LuxonDT = LuxonDT; }
 
-    // ---- Lightweight service worker (offline + keeps same URL) ----
+    // ---- Lightweight service worker for offline + auto-update ----
     (function(){
       if(!('serviceWorker' in navigator)) return;
       const swCode = `self.addEventListener('install',e=>self.skipWaiting());self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));self.addEventListener('fetch',e=>{e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));});`;
@@ -152,7 +168,9 @@
       navigator.serviceWorker.register(url).catch(()=>{});
     })();
 
-    // ---- Element refs ----
+    // ---- Hardcoded Google Apps Script endpoint (preconfigured) ----
+    const ENDPOINT = 'https://script.google.com/macros/s/AKfycbxZqEc4dO0XS6QJG2CE2pBm7Fu0ALVhKYOdzv6Vnm8NaKaFC8ma_lpYj1-NFT6las2M2w/exec';
+
     const els = {
       file: document.getElementById('file'),
       galleryFile: document.getElementById('galleryFile'),
@@ -178,11 +196,13 @@
       webapp: document.getElementById('webapp'),
     };
 
-    // Save/load endpoint locally
-    els.webapp.value = localStorage.getItem('dateCalWebApp') || '';
+    // Web App URL is preconfigured and not editable
+    els.webapp.value = ENDPOINT;
+    els.webapp.disabled = true;
+    els.webapp.placeholder = ENDPOINT + ' (preconfigured)';
     els.webapp.addEventListener('change', ()=> localStorage.setItem('dateCalWebApp', els.webapp.value.trim()));
 
-    // ---- Image handling ----
+    // ---------- Image handling ----------
     let imgBlob = null;
     function setImage(file){
       imgBlob = file;
@@ -191,191 +211,171 @@
       els.imgWrap.style.display = 'block';
       els.ocrBtn.disabled = false;
     }
-    document.getElementById('file').addEventListener('change', ()=>{ if(els.file.files[0]) setImage(els.file.files[0]); });
+    els.file.addEventListener('change', ()=>{ if(els.file.files[0]) setImage(els.file.files[0]); });
     els.galleryBtn.addEventListener('click', ()=> els.galleryFile.click());
     els.galleryFile.addEventListener('change', ()=>{ if(els.galleryFile.files[0]) setImage(els.galleryFile.files[0]); });
     els.clearBtn.addEventListener('click', ()=>{ imgBlob=null; els.imgWrap.style.display='none'; els.rawText.value=''; els.ocrStatus.textContent=''; });
 
-    // ---- OCR (tuned to reduce junk) ----
+    // ---------- OCR ----------
     els.ocrBtn.addEventListener('click', async ()=>{
       if(!imgBlob) return;
       els.ocrStatus.textContent = 'Running OCR…';
       try{
-        const { data } = await Tesseract.recognize(imgBlob, 'eng', {
-          tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789:,.-/()&\n ',
-          preserve_interword_spaces: '1',
-          psm: 6
-        });
-        const raw = (data.text||'').trim();
-        els.rawText.value = smartClean(raw);
+        const { data } = await Tesseract.recognize(imgBlob, 'eng');
+        els.rawText.value = (data.text||'').trim();
         els.ocrStatus.textContent = 'OCR complete';
       }catch(e){ els.ocrStatus.textContent = 'OCR error: '+e.message; }
     });
 
-    // ---- Cleaning & parsing helpers ----
-    function smartClean(t){
-      let s = t.replace(/[\u0000-\u001f\u007f]/g,' ')
-               .replace(/[^A-Za-z0-9:,\.\/()&\-\n ]/g,' ')
-               .replace(/[|_]{2,}/g,' ')
-               .replace(/\s{2,}/g,' ');
-      s = s.replace(/\bAUGVST\b/gi,'AUGUST').replace(/\bORE\b/gi,'OR');
-      const lines = s.split('\n').map(l=>l.trim())
-        .filter(Boolean)
-        .filter(l => (l.replace(/[^A-Za-z]/g,'').length / Math.max(1,l.length)) > 0.35)
-        .filter(l => l.length >= 3);
-      return lines.join('\n');
-    }
-
-    function fmtDateHuman(d){
-      const days=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-      const months=["January","February","March","April","May","June","July","August","September","October","November","December"];
-      return `${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
-    }
-
+    // ---------- Parsing helpers ----------
     function normalizeDateStr(s){
       if(!s) return '';
+      // Try multiple formats → human format "EEE, LLLL d, yyyy"
       const tryFormats = ['EEE, LLL d, yyyy','EEE, LLLL d, yyyy','LLLL d, yyyy','LLL d, yyyy','M/d/yyyy','M/d/yy','yyyy-MM-dd'];
       let dt = null;
-      for(const f of tryFormats){ dt = LuxonDT.fromFormat(s,f,{locale:'en'}); if(dt.isValid) break; }
-      if(!dt || !dt.isValid){ const js = new Date(s); if(!isNaN(js)) dt = LuxonDT.fromJSDate(js); }
-      if(dt && dt.isValid){
-        const now = LuxonDT.now();
-        if (dt.year < now.year - 1 || dt.year > now.year + 2) { dt = dt.set({year: now.year}); if (dt < now.startOf('day')) dt = dt.plus({years:1}); }
-        return dt.toFormat('EEE, LLLL d, yyyy');
+      for(const f of tryFormats){
+        dt = LuxonDT.fromFormat(s, f, {locale:'en'});
+        if(dt.isValid) break;
       }
-      return s;
+      if(!dt || !dt.isValid){
+        const js = new Date(s);
+        if(!isNaN(js)) dt = LuxonDT.fromJSDate(js);
+      }
+      return (dt && dt.isValid) ? dt.toFormat('EEE, LLLL d, yyyy') : s;
     }
 
-    function format12h(h24,min){ const ap=h24>=12?'PM':'AM'; let h=h24%12; if(h===0) h=12; const mm=String(min).padStart(2,'0'); return `${h}:${mm} ${ap}`; }
-    function parseTimeToken(tok){
-      let s = tok.trim().toLowerCase().replace(/\./g,'').replace(/^(\d{1,2})(\d{2})$/,'$1:$2');
-      const m = s.match(/^(\d{1,2})(?::(\d{2}))?\s*(am|pm)?$/);
-      if(!m){ const m24=s.match(/^(\d{1,2})(?::(\d{2}))$/); if(m24){ return format12h(parseInt(m24[1],10), parseInt(m24[2]||'0',10)); } return null; }
-      let h=parseInt(m[1],10), min=parseInt(m[2]||'0',10), ap=m[3];
-      if(!ap){ if(h>=13) return format12h(h,min); ap='pm'; }
-      if(ap==='am' && h===12) h=0; if(ap==='pm' && h<12) h+=12; return format12h(h,min);
-    }
-    function parseTimesFromText(text){
-      const t = text.replace(/\u2013|\u2014|—|–/g,'-');
-      const range = t.match(/(\d{1,2}(?::?\d{2})?\s*(?:am|pm)?)\s*(?:-|\bto\b)\s*(\d{1,2}(?::?\d{2})?\s*(?:am|pm)?)/i);
-      if(range){ const a=parseTimeToken(range[1]); const b=parseTimeToken(range[2]); if(a||b) return {start:a||'', end:b||''}; }
-      const single = t.match(/(\b\d{1,2}(?::?\d{2})?\s*(?:am|pm)\b|\b\d{1,2}:\d{2}\b|\b\d{3,4}\b)/i);
-      if(single){ const a=parseTimeToken(single[1]); if(a) return {start:a, end:''}; }
-      return {start:'', end:''};
+    function normalizeTimeStr(s){
+      if(!s) return '';
+      let str = s.trim().replace(/\./g,'');
+      // Support 1730 → 17:30, 530 PM → 5:30 PM
+      str = str.replace(/^(\d{1,2})(\d{2})\s*(AM|PM)$/i, '$1:$2 $3').replace(/^(\d{1,2})(\d{2})$/, '$1:$2');
+      const guesses = ['h:mm a','h a','H:mm','H'];
+      for(const g of guesses){
+        const t = LuxonDT.fromFormat(str, g);
+        if(t.isValid) return t.toFormat('h:mm a');
+      }
+      const now = LuxonDT.now();
+      const parsed = LuxonDT.fromJSDate(new Date(`${now.toISODate()} ${str}`));
+      return parsed.isValid ? parsed.toFormat('h:mm a') : s;
     }
 
-    function extractBriefNotes(text){ return text.trim().replace(/\s+/g,' ').split(' ').slice(0,5).join(' '); }
+    function extractBriefNotes(text){
+      return text.trim().replace(/\s+/g,' ').split(' ').slice(0,5).join(' ');
+    }
 
     function parseFromRaw(){
-      const cleaned = smartClean(els.rawText.value);
-      const lines = cleaned.split('\n').map(l=>l.trim()).filter(Boolean);
-
-      // Event
+      const lines = els.rawText.value.split('\n').map(l=>l.trim()).filter(Boolean);
       els.event.value = lines[0] || '';
-
-      // Location: venue/city tokens
-      const locIdx = lines.findIndex(l => /(BEND\b|OR\b|Theatre|Theater|Pub|Park|Amphitheater|Arena|Hall|Center|Club|Bar)/i.test(l));
-      if (locIdx >= 0) {
-        const venue = lines[locIdx];
-        const cityLine = lines[locIdx+1] && /(BEND|OR|, *[A-Z]{2})/i.test(lines[locIdx+1]) ? lines[locIdx+1] : '';
-        els.location.value = (venue + (cityLine?`, ${cityLine}`:'')).replace(/\bORE\b/i,'OR').replace(/\s*,\s*/g,', ').trim();
-      } else {
-        els.location.value = lines[1] || '';
-      }
-
-      // Date
-      const dateLine = lines.find(l=>/(Mon|Tue|Wed|Thu|Fri|Sat|Sun)|\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\b|\b\d{4}-\d{2}-\d{2}\b|\b\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4}\b|January|February|March|April|May|June|July|August|September|October|November|December/i.test(l)) || '';
+      els.location.value = lines[1] || '';
+      const dateLine = lines.find(l=>/(Mon|Tue|Wed|Thu|Fri|Sat|Sun)|\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\b|\d{4}-\d{2}-\d{2}|\d{1,2}\/\d{1,2}/i.test(l)) || '';
       els.date.value = normalizeDateStr(dateLine);
 
-      // Time
-      const timeLine = lines.find(l=>/(\d{1,2}(:\d{2})?\s*(am|pm)\b|\b\d{1,2}:\d{2}\b|\b\d{3,4}\b).*(-|–|—|to)?/i.test(l)) || '';
+      const timeLine = lines.find(l=>/(\d{1,2}:\d{2}\s*(am|pm)?)\s*(?:-|–|—|to)\s*(\d{1,2}:\d{2}\s*(am|pm)?)|\b\d{1,2}(:\d{2})?\s*(am|pm)\b|\b\d{1,2}:\d{2}\b/i.test(l)) || '';
       if(/-|–|—|\bto\b/i.test(timeLine)){
-        const parts = timeLine.split(/-|–|—|\bto\b/i).map(x=>parseTimeToken(x)).map(x=>x||'');
-        els.startTime.value = parts[0]||''; els.endTime.value = parts[1]||'';
+        const [a,b] = timeLine.split(/-|–|—|\bto\b/i).map(x=>normalizeTimeStr(x));
+        els.startTime.value = a || '';
+        els.endTime.value = b || '';
         els.allDay.checked = false;
-      } else if(timeLine){
-        const single = parseTimeToken(timeLine);
-        els.startTime.value = single || ''; els.endTime.value = '';
-        els.allDay.checked = !single;
-      } else {
-        els.startTime.value = ''; els.endTime.value = ''; els.allDay.checked = true;
+      }else if(timeLine){
+        els.startTime.value = normalizeTimeStr(timeLine);
+        els.endTime.value = '';
+        els.allDay.checked = false;
+      }else{
+        els.startTime.value = '';
+        els.endTime.value = '';
+        els.allDay.checked = true;
       }
 
-      els.notes.value = extractBriefNotes(cleaned);
+      els.notes.value = extractBriefNotes(els.rawText.value);
     }
 
     els.parseBtn.addEventListener('click', parseFromRaw);
+
+    // Quick action bar hooks
     document.getElementById('quickOCR').addEventListener('click', ()=> els.ocrBtn.click());
     document.getElementById('quickParse').addEventListener('click', ()=> els.parseBtn.click());
     document.getElementById('quickSend').addEventListener('click', ()=> els.sendBtn.click());
 
-    // Enforce All-Day XOR Times
+    // Enforce All‑Day XOR Times live
     function onTimesChanged(){ if(els.startTime.value || els.endTime.value) els.allDay.checked=false; }
     els.startTime.addEventListener('input', onTimesChanged);
     els.endTime.addEventListener('input', onTimesChanged);
     els.allDay.addEventListener('change', ()=>{ if(els.allDay.checked){ els.startTime.value=''; els.endTime.value=''; } });
 
-    // ---- Send to Google Sheet ----
+    // ---------- Send to Google Sheet ----------
     els.sendBtn.addEventListener('click', async ()=>{
-      const url = (els.webapp.value||localStorage.getItem('dateCalWebApp')||'').trim();
+      const url = ENDPOINT;
       if(!url){ els.sendStatus.innerHTML = '<span class="warnText">Add your Web App URL in the settings above.</span>'; return; }
 
-      if(els.allDay.checked){ els.startTime.value=''; els.endTime.value=''; } // XOR
+      // All‑day wins if checked
+      if(els.allDay.checked){ els.startTime.value=''; els.endTime.value=''; }
 
-      const fields = {
-        event: (els.event.value||'').trim(),
-        location: (els.location.value||'').trim(),
-        date: (els.date.value||'').trim(),
-        startTime: (els.startTime.value||'').trim(),
-        endTime: (els.endTime.value||'').trim(),
-        allDay: !!els.allDay.checked,
-        notes: (els.notes.value||'').trim()
+      const payload = {
+        Event: (els.event.value||'').trim(),
+        Location: (els.location.value||'').trim(),
+        Date: (els.date.value||'').trim(),               // Human format
+        StartTime: (els.startTime.value||'').trim(),
+        EndTime: (els.endTime.value||'').trim(),
+        AllDay: !!els.allDay.checked,
+        Notes: (els.notes.value||'').trim()
       };
+      if(!payload.Event || !payload.Date){ els.sendStatus.innerHTML = '<span class="warnText">Need at least Event and Date.</span>'; return; }
 
-      // Include both key styles for compatibility with either Apps Script
-      const payload = Object.assign({}, fields, {
-        Event: fields.event,
-        Location: fields.location,
-        Date: fields.date,
-        StartTime: fields.startTime,
-        EndTime: fields.endTime,
-        AllDay: fields.allDay,
-        Notes: fields.notes
-      });
-
-      if(!fields.event || !fields.date){ els.sendStatus.innerHTML = '<span class="warnText">Need at least Event and Date.</span>'; return; }
-
-      els.sendStatus.textContent = 'Sending…'; els.sendBtn.disabled = true;
+      els.sendStatus.textContent = 'Sending…';
+      els.sendBtn.disabled = true;
       try{
         const r = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
         const t = await r.text();
         if(r.ok){ els.sendStatus.innerHTML = '<span class="ok">Row appended ✔</span> ' + (t||''); }
         else{ els.sendStatus.innerHTML = '<span class="err">Server error:</span> '+(t||r.status); }
       }catch(e){
-        els.sendStatus.innerHTML = '<span class="err">Network error:</span> '+e.message+'<div class="helper">Ensure your Apps Script access is “Anyone” and returns CORS headers.</div>';
+        els.sendStatus.innerHTML = '<span class="err">Network error:</span> '+e.message;
       }finally{ els.sendBtn.disabled = false; }
     });
 
-    // ---- Built-in parsing tests ----
+    // ---------- Parsing tests (added) ----------
     const tests = [
-      { name:'All-day date only', input:`Oregon Brewers Festival\nTom McCall Waterfront Park, Portland OR\nSaturday July 12, 2025`, expect:{event:'Oregon Brewers Festival', location:'Tom McCall Waterfront Park, Portland OR', date:'Sat, July 12, 2025', start:'', end:'', allDay:true} },
-      { name:'Range with dash', input:`Post Modern Jukebox\nTower Theater, Bend OR\nWed, July 2, 2025\n6:00 PM - 9:00 PM`, expect:{event:'Post Modern Jukebox', location:'Tower Theater, Bend OR', date:'Wed, July 2, 2025', start:'6:00 PM', end:'9:00 PM', allDay:false} },
-      { name:'Range with “to”', input:`Paddleboarding\nOld Mill, Bend OR\nTue, July 1, 2025 5:30 PM to 8:00 PM`, expect:{event:'Paddleboarding', location:'Old Mill, Bend OR', date:'Tue, July 1, 2025', start:'5:30 PM', end:'8:00 PM', allDay:false} },
-      { name:'Single time only', input:`Lake Street Dive\nHayden Homes Amphitheater, Bend OR\nWed, July 2, 2025\n7:15 PM`, expect:{event:'Lake Street Dive', location:'Hayden Homes Amphitheater, Bend OR', date:'Wed, July 2, 2025', start:'7:15 PM', end:'', allDay:false} },
-      { name:'24h to 12h', input:`Concert Night\nHayden Homes Amphitheater\nJuly 3, 2025\n18:30`, expect:{event:'Concert Night', location:'Hayden Homes Amphitheater', date:'Thu, July 3, 2025', start:'6:30 PM', end:'', allDay:false} }
+      {
+        name:'All-day date only',
+        input:`Oregon Brewers Festival\nTom McCall Waterfront Park, Portland OR\nSaturday July 12, 2025`,
+        expect:{event:'Oregon Brewers Festival', location:'Tom McCall Waterfront Park, Portland OR', date:'Sat, July 12, 2025', start:'', end:'', allDay:true}
+      },
+      {
+        name:'Range with dash',
+        input:`Post Modern Jukebox\nTower Theater, Bend OR\nWed, July 2, 2025\n6:00 PM - 9:00 PM`,
+        expect:{event:'Post Modern Jukebox', location:'Tower Theater, Bend OR', date:'Wed, July 2, 2025', start:'6:00 PM', end:'9:00 PM', allDay:false}
+      },
+      {
+        name:'Range with “to”',
+        input:`Paddleboarding\nOld Mill, Bend OR\nTue, July 1, 2025 5:30 PM to 8:00 PM`,
+        expect:{event:'Paddleboarding', location:'Old Mill, Bend OR', date:'Tue, July 1, 2025', start:'5:30 PM', end:'8:00 PM', allDay:false}
+      },
+      {
+        name:'Single time only',
+        input:`Lake Street Dive\nHayden Homes Amphitheater, Bend OR\nWed, July 2, 2025\n7:15 PM`,
+        expect:{event:'Lake Street Dive', location:'Hayden Homes Amphitheater, Bend OR', date:'Wed, July 2, 2025', start:'7:15 PM', end:'', allDay:false}
+      },
+      {
+        name:'24h to 12h',
+        input:`Concert Night\nHayden Homes Amphitheater\nJuly 3, 2025\n18:30`,
+        expect:{event:'Concert Night', location:'Hayden Homes Amphitheater', date:'Thu, July 3, 2025', start:'6:30 PM', end:'', allDay:false}
+      }
     ];
-    function escapeHtml(s){ return s.replace(/[&<>]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[ch])); }
+
     function runParsingTests(){
-      const rows=[]; let pass=0;
+      let pass=0; const rows=[];
       for(const t of tests){
         els.rawText.value = t.input; parseFromRaw();
-        const got = { event:els.event.value, location:els.location.value, date:els.date.value, start:els.startTime.value, end:els.endTime.value, allDay:els.allDay.checked };
+        const got = {event:els.event.value, location:els.location.value, date:els.date.value, start:els.startTime.value, end:els.endTime.value, allDay:els.allDay.checked};
         const ok = got.event===t.expect.event && got.location===t.expect.location && got.date===t.expect.date && got.start===t.expect.start && got.end===t.expect.end && got.allDay===t.expect.allDay;
         if(ok) pass++;
         rows.push(`<tr><td>${t.name}</td><td>${ok?'✅ PASS':'❌ FAIL'}</td><td><pre>${escapeHtml(JSON.stringify(got,null,2))}</pre></td><td><pre>${escapeHtml(JSON.stringify(t.expect,null,2))}</pre></td></tr>`);
       }
       els.testResults.innerHTML = `<div class="ok">${pass}/${tests.length} tests passed</div><div style="overflow:auto;max-height:380px;margin-top:8px"><table><thead><tr><th>Test</th><th>Result</th><th>Observed</th><th>Expected</th></tr></thead><tbody>${rows.join('')}</tbody></table></div>`;
     }
+
+    function escapeHtml(s){ return s.replace(/[&<>]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[ch])); }
+
     els.runTests.addEventListener('click', runParsingTests);
   </script>
 </body>
