@@ -3,15 +3,11 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-
-<!-- App-like settings -->
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="Date Calendar OCR" />
 <meta name="theme-color" content="#0b0f14" />
-
 <title>Snap → Sheet: Date Calendar</title>
-
 <style>
   :root {
     --bg:#0b0f14; --fg:#e7f0f2; --muted:#9fb2ba;
@@ -20,52 +16,37 @@
     --card:#121a22; --input:#0f1720; --border:#1f2a36;
   }
   * { box-sizing: border-box; }
-  html, body {
-    margin: 0; height: 100%; background: var(--bg); color: var(--fg);
-    font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-  }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg);
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
   header { padding: 12px 14px; background: #0b0f14; font-size: 18px; text-align: center; }
   main { padding: 12px; padding-bottom: 80px; }
   .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 14px; margin: 12px 0; }
   label { display:block; font-size: 13px; color: var(--muted); margin: 8px 0 6px; }
   input[type="text"], textarea {
     width: 100%; border: 1px solid var(--border); background: var(--input); color: var(--fg);
-    border-radius: 12px; padding: 12px; font-size: 16px;
-  }
+    border-radius: 12px; padding: 12px; font-size: 16px; }
   textarea { min-height: 180px; resize: vertical; }
   .preview { width: 100%; max-height: 320px; object-fit: contain; border-radius: 12px; border: 1px solid var(--border); background:#0a1016; }
   .helper { color: var(--muted); font-size: 12px; }
   .status { margin-top: 8px; font-size: 14px; }
   .ok { color: var(--accent2); } .warn { color: var(--warn); } .err { color: var(--err); }
-
-  /* Sticky bottom action bar */
-  .actions {
-    position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
-    background: #0b0f14; border-top: 1px solid var(--border);
-    padding: 8px;
-  }
+  .actions { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: #0b0f14;
+    border-top: 1px solid var(--border); padding: 8px; }
   .actions .row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-  .btn {
-    appearance: none; border: 1px solid var(--border); background: #12202a; color: #e7f0f2;
-    border-radius: 12px; padding: 12px; font-size: 15px; font-weight: 700;
-  }
+  .btn { appearance: none; border: 1px solid var(--border); background: #12202a; color: #e7f0f2;
+    border-radius: 12px; padding: 12px; font-size: 15px; font-weight: 700; }
   .btn.primary { background: var(--accent); color:#04221d; border-color: #0e3e37; }
   .btn:active { opacity: .85; }
-  @media (max-width: 420px) {
-    .actions .row { grid-template-columns: repeat(2, 1fr); }
-  }
+  @media (max-width: 420px) { .actions .row { grid-template-columns: repeat(2, 1fr); } }
 </style>
 </head>
 <body>
-
 <header>📅 Date Calendar OCR</header>
 
 <main>
   <section class="card">
     <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
-      <!-- Camera (Snap) -->
       <input id="imageSnap" type="file" accept="image/*" capture="environment" style="display:none" />
-      <!-- Gallery (Camera roll) -->
       <input id="imageGallery" type="file" accept="image/*" style="display:none" />
       <button class="btn" id="btnSnap">📷 Snap</button>
       <button class="btn" id="btnGallery">🖼 Gallery</button>
@@ -77,7 +58,7 @@
     </div>
     <label for="ocrOutput">OCR Text</label>
     <textarea id="ocrOutput" placeholder="OCR result will appear here..."></textarea>
-    <p class="helper">Tip: After OCR, you can edit the text before sending. Notes will be auto-trimmed to ≤ 5 words.</p>
+    <p class="helper">After OCR, you can edit the text before sending. Notes will be auto-trimmed to ≤ 5 words.</p>
   </section>
 
   <section class="card">
@@ -104,18 +85,17 @@
   </div>
 </div>
 
-<!-- Tesseract (kept same major as your working version) -->
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.1.1/dist/tesseract.min.js"></script>
 <script>
-  // --- Local storage for endpoint ---
+  // Endpoint storage
   const urlInput = document.getElementById('scriptUrl');
   const saveStatus = document.getElementById('saveStatus');
-  function loadEndpoint() { return localStorage.getItem('dateCalScriptUrl') || ''; }
-  function saveEndpoint(url) { localStorage.setItem('dateCalScriptUrl', url); saveStatus.textContent = 'Saved ✔'; setTimeout(()=>saveStatus.textContent='', 1500); }
+  function loadEndpoint(){ return localStorage.getItem('dateCalScriptUrl') || ''; }
+  function saveEndpoint(u){ localStorage.setItem('dateCalScriptUrl', u); saveStatus.textContent='Saved ✔'; setTimeout(()=>saveStatus.textContent='',1500); }
   urlInput.value = loadEndpoint();
-  urlInput.addEventListener('change', () => saveEndpoint(urlInput.value.trim()));
+  urlInput.addEventListener('change', ()=> saveEndpoint(urlInput.value.trim()));
 
-  // --- Elements ---
+  // Elements
   const els = {
     imageSnap: document.getElementById('imageSnap'),
     imageGallery: document.getElementById('imageGallery'),
@@ -135,7 +115,7 @@
   };
 
   let imgFile = null;
-  function setImage(file) {
+  function setImage(file){
     imgFile = file;
     const url = URL.createObjectURL(file);
     els.preview.src = url;
@@ -149,71 +129,126 @@
   els.actSnap.addEventListener('click', ()=> els.imageSnap.click());
   els.actGallery.addEventListener('click', ()=> els.imageGallery.click());
 
-  // Input change handlers
-  els.imageSnap.addEventListener('change', ()=> { if (els.imageSnap.files[0]) setImage(els.imageSnap.files[0]); });
-  els.imageGallery.addEventListener('change', ()=> { if (els.imageGallery.files[0]) setImage(els.imageGallery.files[0]); });
+  // Inputs
+  els.imageSnap.addEventListener('change', ()=> { if(els.imageSnap.files[0]) setImage(els.imageSnap.files[0]); });
+  els.imageGallery.addEventListener('change', ()=> { if(els.imageGallery.files[0]) setImage(els.imageGallery.files[0]); });
 
-  // Date: “Tue, July 1, 2025”
-  function fmtDateHuman(d) {
+  // Format date “Tue, July 1, 2025”
+  function fmtDateHuman(d){
     const days = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
     const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
     return `${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
   }
-
   // Notes ≤ 5 words
-  function briefNotes(text) {
-    return text.trim().replace(/\s+/g,' ').split(' ').slice(0,5).join(' ');
+  function briefNotes(text){ return text.trim().replace(/\\s+/g,' ').split(' ').slice(0,5).join(' '); }
+
+  // --- Real parsing (dates & times) ---
+  function parseDateFromText(text){
+    const t = text.replace(/\\u2013|\\u2014|—|–/g,'-');
+    const monthNameRe = /(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)?,?\\s*(January|February|March|April|May|June|July|August|September|October|November|December)\\s+(\\d{1,2}),?\\s+(\\d{4})/i;
+    const m1 = t.match(monthNameRe);
+    if(m1){
+      const monthIndex = ["January","February","March","April","May","June","July","August","September","October","November","December"].findIndex(m=>m.toLowerCase()===m1[1].toLowerCase());
+      const d = new Date(parseInt(m1[3],10), monthIndex, parseInt(m1[2],10));
+      if(!isNaN(d)) return d;
+    }
+    const numRe = /\\b(\\d{1,2})[\\/\\-](\\d{1,2})[\\/\\-](\\d{2,4})\\b/;
+    const m2 = t.match(numRe);
+    if(m2){
+      let y = parseInt(m2[3],10); if(y<100) y += 2000;
+      const d = new Date(y, parseInt(m2[1],10)-1, parseInt(m2[2],10));
+      if(!isNaN(d)) return d;
+    }
+    const isoRe = /\\b(\\d{4})-(\\d{2})-(\\d{2})\\b/;
+    const m3 = t.match(isoRe);
+    if(m3){
+      const d = new Date(parseInt(m3[1],10), parseInt(m3[2],10)-1, parseInt(m3[3],10));
+      if(!isNaN(d)) return d;
+    }
+    return null;
+  }
+  function format12h(h24, min){ const ap = h24>=12 ? 'PM' : 'AM'; let h=h24%12; if(h===0) h=12; const mm=String(min).padStart(2,'0'); return `${h}:${mm} ${ap}`; }
+  function parseTimeToken(tok){
+    let s = tok.trim().toLowerCase().replace(/\\./g,'');
+    s = s.replace(/^(\\d{1,2})(\\d{2})$/, '$1:$2'); // 1730 → 17:30
+    const m = s.match(/^(\\d{1,2})(?::(\\d{2}))?\\s*(am|pm)?$/);
+    if(!m){
+      const m24 = s.match(/^(\\d{1,2})(?::(\\d{2}))$/);
+      if(m24){ return format12h(parseInt(m24[1],10), parseInt(m24[2]||'0',10)); }
+      return null;
+    }
+    let h = parseInt(m[1],10), min = parseInt(m[2]||'0',10), ap = m[3];
+    if(!ap){ if(h>=13){ return format12h(h,min); } ap='pm'; }
+    if(ap==='am' && h===12) h=0; if(ap==='pm' && h<12) h+=12; return format12h(h,min);
+  }
+  function parseTimesFromText(text){
+    const t = text.replace(/\\u2013|\\u2014|—|–/g,'-');
+    const rangeRe = /(\\d{1,2}(?::?\\d{2})?\\s*(?:am|pm)?)\\s*(?:-|\\bto\\b)\\s*(\\d{1,2}(?::?\\d{2})?\\s*(?:am|pm)?)/i;
+    const mr = t.match(rangeRe);
+    if(mr){ const a=parseTimeToken(mr[1]); const b=parseTimeToken(mr[2]); if(a||b) return {start:a||'', end:b||''}; }
+    const singleRe = /(\\b\\d{1,2}(?::?\\d{2})?\\s*(?:am|pm)\\b|\\b\\d{1,2}:\\d{2}\\b|\\b\\d{3,4}\\b)/i;
+    const ms = t.match(singleRe); if(ms){ const a=parseTimeToken(ms[1]); if(a) return {start:a, end:''}; }
+    return {start:'', end:''};
+  }
+  function extractFields(raw){
+    const lines = raw.split('\\n').map(s=>s.trim()).filter(Boolean);
+    const event = lines[0] || '';
+    const location = lines[1] || '';
+    const dObj = parseDateFromText(raw);
+    const date = dObj ? fmtDateHuman(dObj) : fmtDateHuman(new Date());
+    const {start, end} = parseTimesFromText(raw);
+    const allDay = !(start || end);
+    const notes = briefNotes(raw);
+    return { event, location, date, startTime:start, endTime:end, allDay, notes };
   }
 
-  async function runOCR() {
-    try {
-      if (!imgFile) return alert('Pick a photo first (Snap or Gallery).');
+  async function runOCR(){
+    try{
+      if(!imgFile) return alert('Pick a photo first (Snap or Gallery).');
       els.ocrStatus.textContent = 'Running OCR…';
       const { data: { text } } = await Tesseract.recognize(imgFile, 'eng');
       els.ocrOutput.value = (text || '').trim();
       els.ocrStatus.textContent = 'OCR complete ✔';
-    } catch (e) {
+    }catch(e){
       els.ocrStatus.textContent = 'OCR error: ' + e.message;
     }
   }
   els.btnOCR.addEventListener('click', runOCR);
   els.actOCR.addEventListener('click', runOCR);
 
-  async function sendToSheet() {
+  async function sendToSheet(){
     const endpoint = (urlInput.value || loadEndpoint()).trim();
-    if (!endpoint) return alert('Add your Google Apps Script Web App URL in Settings first.');
+    if(!endpoint) return alert('Add your Google Apps Script Web App URL in Settings first.');
     const raw = els.ocrOutput.value.trim();
-    if (!raw) return alert('No OCR text yet.');
+    if(!raw) return alert('No OCR text yet.');
 
-    // Placeholder parsing (we can upgrade next): first line title, second line location
-    const lines = raw.split('\n').map(s => s.trim()).filter(Boolean);
-    const event = lines[0] || '';
-    const location = lines[1] || '';
-    const date = fmtDateHuman(new Date());  // replace with parsed date later
-    const startTime = '';                   // mutually exclusive with allDay (when we parse times)
-    const endTime = '';
-    const allDay = true;
-    const notes = briefNotes(raw);
-
-    const payload = { event, location, date, startTime, endTime, allDay, notes };
+    const fields = extractFields(raw);
+    if(fields.allDay){ fields.startTime=''; fields.endTime=''; } // XOR times
 
     els.sendStatusWrap.style.display = 'block';
     els.sendStatus.textContent = 'Sending…';
-    try {
+    try{
       const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type':'application/json' },  // normal CORS (no 'no-cors')
-        body: JSON.stringify(payload)
+        method:'POST',
+        headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify({
+          event: fields.event,
+          location: fields.location,
+          date: fields.date,
+          startTime: fields.startTime,
+          endTime: fields.endTime,
+          allDay: fields.allDay,
+          notes: fields.notes
+        })
       });
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      els.sendStatus.innerHTML = '<span class="ok">Row appended ✔</span>';
-    } catch (e) {
-      els.sendStatus.innerHTML = '<span class="err">Send failed:</span> ' + e.message +
-        '<div class="helper">If this persists, ensure your Apps Script returns CORS headers and access is set to “Anyone”.</div>';
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      els.sendStatus.innerHTML = '<span class=\"ok\">Row appended ✔</span>';
+    }catch(e){
+      els.sendStatus.innerHTML = '<span class=\"err\">Send failed:</span> ' + e.message +
+        '<div class=\"helper\">Ensure your Apps Script access is “Anyone” and it returns CORS headers.</div>';
     }
   }
   document.getElementById('actSend').addEventListener('click', sendToSheet);
 </script>
-
 </body>
 </html>
