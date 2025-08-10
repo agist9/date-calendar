@@ -227,7 +227,13 @@
 
     els.sendStatus.textContent='Sending…'; els.sendBtn.disabled=true;
     try{
-      const r = await fetch(ENDPOINT, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+      const r = await fetch(ENDPOINT, {
+  method: 'POST',
+  // Use a "simple" content-type so Safari/Chrome won't do a CORS preflight (OPTIONS)
+  headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+  body: JSON.stringify(payload)
+});
+
       const t = await r.text();
       if(!r.ok) throw new Error(t||('HTTP '+r.status));
       els.sendStatus.innerHTML='<span class="ok">Row appended ✔</span>';
@@ -238,3 +244,4 @@
 </script>
 </body>
 </html>
+
