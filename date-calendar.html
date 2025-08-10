@@ -29,6 +29,11 @@
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px} @media (max-width:560px){.grid2{grid-template-columns:1fr}}
   .fabbar{position:sticky;bottom:0;z-index:10;background:linear-gradient(180deg,#0b0f1400,#0b0f14 30%);padding:8px 4px}
   .fabbar .toolbar{justify-content:space-between}
+  /* Toast */
+  #toast { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); background: #0f172a; color: #e7f0f2; border: 1px solid #1f2a36; padding: 10px 14px; border-radius: 12px; box-shadow: 0 8px 30px #0006; font-size: 14px; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(-4px); }
+  #toast.ok   { border-color: #14532d; }
+  #toast.err  { border-color: #7f1d1d; }
 </style>
 <script src="https://unpkg.com/tesseract.js@5.1.0/dist/tesseract.min.js"></script>
 <script src="https://unpkg.com/luxon@3.4.4/build/global/luxon.min.js"></script>
@@ -90,8 +95,10 @@
   </div>
 </main>
 
+<div id="toast" aria-live="polite"></div>
+
 <script>
-  // ===== Hardcoded Google Apps Script endpoint =====
+  // ===== Hardcoded Google Apps Script endpoint (your updated /exec) =====
   const ENDPOINT = 'https://script.google.com/macros/s/AKfycbwlbzfKuN0bbHsEuT3ykv_z5F11rEUZ5yS2Be2u02I9_-sEBBpG9cEcjCkJ50Qn_rY/exec';
 
   // Luxon alias (avoid DateTime redefinition conflicts)
@@ -131,6 +138,13 @@
     sendBtn: sendBtn, sendStatus: sendStatus, quickOCR: quickOCR, quickParse: quickParse, quickSend: quickSend,
     pingBtn: pingBtn, pingStatus: pingStatus
   };
+
+  // Toast helper
+  function showToast(msg, kind='ok', ms=2000){
+    const el = document.getElementById('toast');
+    el.textContent = msg; el.className=''; el.classList.add('show', kind);
+    clearTimeout(showToast._t); showToast._t = setTimeout(()=> el.classList.remove('show'), ms);
+  }
 
   // Image handling
   let imgBlob=null;
@@ -178,6 +192,7 @@
     let h=parseInt(m[1],10),min=parseInt(m[2]||'0',10),ap=m[3]; if(!ap){ if(h>=13) return format12h(h,min); ap='pm'; }
     if(ap==='am'&&h===12) h=0; if(ap==='pm'&&h<12) h+=12; return format12h(h,min);
   }
+
   function parseFromRaw(){
     const cleaned=smartClean(els.rawText.value);
     const lines=cleaned.split('\n').map(l=>l.trim()).filter(Boolean);
@@ -193,7 +208,7 @@
     const tLine=lines.find(l=>/(\d{1,2}(:\d{2})?\s*(am|pm)\b|\b\d{1,2}:\d{2}\b|\b\d{3,4}\b).*(-|–|—|to)?/i.test(l))||'';
     const times=/-|–|—|\bto\b/i.test(tLine)?tLine.split(/-|–|—|\bto\b/i).map(parseTimeToken).map(x=>x||''):[parseTimeToken(tLine)||'',''];
     els.startTime.value=times[0]||''; els.endTime.value=times[1]||''; els.allDay.checked=!(times[0]||times[1]);
-    els.notes.value=smartClean(els.rawText.value).split(/\s+/).slice(0,5).join(' ');
+    els.notes.value=cleaned.split(/\s+/).slice(0,5).join(' ');
   }
 
   // Hooks
@@ -212,17 +227,24 @@
       const r=await fetch(ENDPOINT,{method:'GET'});
       const t=await r.text();
       pingStatus.innerHTML=r.ok?`<span class="ok">OK:</span> ${t}`:`<span class="err">Error:</span> ${t||r.status}`;
-    }catch(e){ pingStatus.innerHTML=`<span class="err">Network error:</span> ${e.message}`; }
+      showToast(r.ok?'Endpoint OK':'Ping error', r.ok?'ok':'err');
+    }catch(e){ pingStatus.innerHTML=`<span class="err">Network error:</span> ${e.message}`; showToast('Network error', 'err'); }
   });
 
   // Send to Google Sheet — using text/plain to avoid CORS preflight
   sendBtn.addEventListener('click', async ()=>{
+    if (!ENDPOINT || !/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(ENDPOINT)) {
+      sendStatus.innerHTML = '<span class="err">Missing/invalid ENDPOINT.</span>';
+      showToast('Missing Web App URL', 'err');
+      return;
+    }
+
     const fields={
       event:event.value.trim(), location:location.value.trim(), date:date.value.trim(),
       startTime:startTime.value.trim(), endTime:endTime.value.trim(), allDay:allDay.checked,
       notes:notes.value.trim()
     };
-    if(!fields.event || !fields.date){ sendStatus.innerHTML='<span class="warnText">Need at least Event and Date.</span>'; return; }
+    if(!fields.event || !fields.date){ sendStatus.innerHTML='<span class="warnText">Need at least Event and Date.</span>'; showToast('Add Event & Date','err'); return; }
     if(fields.allDay){ fields.startTime=''; fields.endTime=''; }
 
     const payload=Object.assign({},fields,{
@@ -230,17 +252,18 @@
       StartTime:fields.startTime,EndTime:fields.endTime,AllDay:fields.allDay,Notes:fields.notes
     });
 
-    sendStatus.textContent='Sending…'; sendBtn.disabled=true;
+    sendStatus.textContent='Sending…'; sendBtn.disabled=true; showToast('Sending…','ok',1200);
     try{
-      const r=await fetch(ENDPOINT,{ method:'POST', headers:{'Content-Type':'text/plain; charset=utf-8'}, body:JSON.stringify(payload) });
+      const r=await fetch(ENDPOINT,{ method:'POST', headers:{'Content-Type':'text/plain; charset=utf-8'}, body: JSON.stringify(payload) });
       const t=await r.text();
       if(!r.ok) throw new Error(t||('HTTP '+r.status));
       sendStatus.innerHTML='<span class="ok">Row appended ✔</span>';
+      showToast('Push successful ✔','ok');
     }catch(e){
-      sendStatus.innerHTML='<span class="err">Send failed:</span> '+e.message+'<div class="helper">If this persists, ensure Apps Script is deployed with Access “Anyone”, Execute as “Me”, and SPREADSHEET_ID/tab are correct.</div>';
-    }finally{ sendBtn.disabled=false; }
+      sendStatus.innerHTML='<span class="err">Send failed:</span> '+e.message+'<div class="helper">Check Apps Script deployment & sheet name.</div>';
+      showToast('Push failed','err');
+    }finally{ sendBtn.disabled = false; }
   });
 </script>
 </body>
 </html>
-
