@@ -11,15 +11,19 @@
 <style>
   :root { --bg:#0b0f14; --fg:#e7f0f2; --muted:#9fb2ba; --accent:#2dd4bf; --accent2:#22c55e; --warn:#f59e0b; --err:#ef4444; --card:#121a22; --input:#0f1720; --border:#1f2a36; }
   *{box-sizing:border-box} html,body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
-  header{position:sticky;top:0;z-index:5;background:#0b0f14} h1{margin:0;padding:14px 16px;font-size:20px}
+  header{position:sticky;top:0;z-index:5;background:#0b0f14}
+  h1{margin:0;padding:14px 16px;font-size:20px;display:flex;align-items:center;gap:10px}
+  h1 .logo{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#60a5fa)}
   main{padding:12px;max-width:920px;margin:0 auto}
   .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;margin:12px 0}
   label{display:block;font-size:13px;color:var(--muted);margin:10px 0 6px}
   input[type="text"],textarea{width:100%;border:1px solid var(--border);background:var(--input);color:var(--fg);border-radius:12px;padding:14px;font-size:16px}
-  input[type="checkbox"]{transform:scale(1.3)} textarea{min-height:96px;resize:vertical}
+  input[type="checkbox"]{transform:scale(1.2)} textarea{min-height:96px;resize:vertical}
   .btn{appearance:none;border:0;border-radius:14px;padding:14px 16px;font-weight:700;color:#00110e;background:var(--accent);cursor:pointer;min-height:44px}
-  .btn.secondary{background:#334155;color:#e5eef0;border:1px solid var(--border)} .btn:disabled{opacity:.6;cursor:not-allowed}
-  .toolbar{display:flex;gap:10px;flex-wrap:wrap} .status{font-size:14px;margin-top:10px}
+  .btn.secondary{background:#334155;color:#e5eef0;border:1px solid var(--border)}
+  .btn:disabled{opacity:.6;cursor:not-allowed}
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap}
+  .status{font-size:14px;margin-top:10px}
   .ok{color:var(--accent2)} .warnText{color:var(--warn)} .err{color:var(--err)}
   .preview{width:100%;max-height:320px;object-fit:contain;border-radius:12px;border:1px solid var(--border);background:#0a1016}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px} @media (max-width:560px){.grid2{grid-template-columns:1fr}}
@@ -30,7 +34,7 @@
 <script src="https://unpkg.com/luxon@3.4.4/build/global/luxon.min.js"></script>
 </head>
 <body>
-<header><h1>📅 Snap → Google Sheet: Date Calendar</h1></header>
+<header><h1><span class="logo">📅</span> Snap → Google Sheet: Date Calendar</h1></header>
 
 <main>
   <!-- Capture / OCR -->
@@ -45,11 +49,13 @@
     </div>
     <div id="imgWrap" style="margin-top:10px;display:none"><img id="preview" class="preview" alt="preview" /></div>
     <div id="ocrStatus" class="status"></div>
+
     <label for="rawText">Extracted / Provided Text</label>
     <textarea id="rawText" placeholder="OCR text will appear here. You can also paste your own text."></textarea>
+
     <div class="toolbar" style="margin-top:10px">
       <button id="parseBtn" class="btn" type="button">🧠 Parse → Fields</button>
-      <button id="pingBtn" class="btn secondary" type="button" title="Check connection to Apps Script">🔗 Ping</button>
+      <button id="pingBtn" class="btn secondary" type="button" title="Check Apps Script connection">🔗 Ping</button>
     </div>
     <div id="pingStatus" class="status"></div>
   </section>
@@ -88,22 +94,39 @@
   // ===== Hardcoded Google Apps Script endpoint =====
   const ENDPOINT = 'https://script.google.com/macros/s/AKfycbxZqEc4dO0XS6QJG2CE2pBm7Fu0ALVhKYOdzv6Vnm8NaKaFC8ma_lpYj1-NFT6las2M2w/exec';
 
-  // Luxon alias to avoid DateTime collisions
+  // Luxon alias (avoid DateTime redefinition conflicts)
   const LuxonDT = (typeof window!=='undefined' && window.__LuxonDT) ? window.__LuxonDT : luxon.DateTime;
   if (typeof window!=='undefined') window.__LuxonDT = LuxonDT;
 
-  // Minimal SW so it’s installable/offline
-  (function(){ if(!('serviceWorker'in navigator))return;
+  // Minimal SW for installability/offline
+  (function(){ if(!('serviceWorker' in navigator))return;
     const sw=`self.addEventListener('install',e=>self.skipWaiting());self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));self.addEventListener('fetch',e=>{e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));});`;
     const url=URL.createObjectURL(new Blob([sw],{type:'text/javascript'}));
     navigator.serviceWorker.register(url).catch(()=>{});
   })();
 
+  // Simple generated icon (camera + sheet) for PWA
+  (function makeIcons(){
+    function rr(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+    function draw(size){
+      const c=document.createElement('canvas');c.width=c.height=size;const g=c.getContext('2d');const rad=size*0.22;
+      const lg=g.createLinearGradient(0,0,size,size);lg.addColorStop(0,'#0ea5e9');lg.addColorStop(1,'#14b8a6');g.fillStyle=lg;rr(g,0,0,size,size,rad);g.fill();
+      const x=size*.18,y=size*.18,w=size*.52,h=size*.56;g.fillStyle='#fff';rr(g,x,y,w,h,size*.06);g.fill();g.fillStyle='#e2e8f0';g.beginPath();g.moveTo(x+w*.72,y);g.lineTo(x+w,y);g.lineTo(x+w,y+h*.28);g.closePath();g.fill();
+      const cbx=size*.42,cby=size*.46,cbw=size*.42,cbh=size*.30;g.fillStyle='#0f172a';rr(g,cbx,cby,cbw,cbh,size*.06);g.fill();g.fillStyle='#1f2937';g.fillRect(cbx,cby-size*.06,cbw,size*.06);
+      const cx=cbx+cbw*.5,cy=cby+cbh*.57,r=size*.085;g.beginPath();g.arc(cx,cy,r*1.35,0,2*Math.PI);g.fillStyle='#111827';g.fill();g.beginPath();g.arc(cx,cy,r,0,2*Math.PI);g.fillStyle='#60a5fa';g.fill();g.beginPath();g.arc(cx-r*.35,cy-r*.35,r*.35,0,2*Math.PI);g.fillStyle='#93c5fd';g.fill();
+      return c.toDataURL('image/png');
+    }
+    const i192=draw(192), i512=draw(512);
+    const l1=document.createElement('link');l1.rel='apple-touch-icon';l1.sizes='180x180';l1.href=i192;document.head.appendChild(l1);
+    const l2=document.createElement('link');l2.rel='icon';l2.href=i192;document.head.appendChild(l2);
+    const manifest={name:"Date Calendar",short_name:"DateCal",start_url:"./",display:"standalone",background_color:"#0b0f14",theme_color:"#0b0f14",icons:[{src:i192,sizes:"192x192",type:"image/png",purpose:"any maskable"},{src:i512,sizes:"512x512",type:"image/png",purpose:"any maskable"}]};
+    const ml=document.createElement('link');ml.rel='manifest';ml.href='data:application/json,'+encodeURIComponent(JSON.stringify(manifest));document.head.appendChild(ml);
+  })();
+
   // Elements
   const els = {
-    file: file, galleryFile: galleryFile, galleryBtn: galleryBtn,
-    ocrBtn: ocrBtn, clearBtn: clearBtn, preview: preview, imgWrap: imgWrap,
-    ocrStatus: ocrStatus, rawText: rawText, parseBtn: parseBtn,
+    file: file, galleryFile: galleryFile, galleryBtn: galleryBtn, ocrBtn: ocrBtn, clearBtn: clearBtn,
+    preview: preview, imgWrap: imgWrap, ocrStatus: ocrStatus, rawText: rawText, parseBtn: parseBtn,
     event: event, location: location, date: date, startTime: startTime, endTime: endTime, allDay: allDay, notes: notes,
     sendBtn: sendBtn, sendStatus: sendStatus, quickOCR: quickOCR, quickParse: quickParse, quickSend: quickSend,
     pingBtn: pingBtn, pingStatus: pingStatus
@@ -123,19 +146,20 @@
     els.ocrStatus.textContent='Running OCR…';
     try{
       const { data } = await Tesseract.recognize(imgBlob,'eng',{
-        tessedit_char_whitelist:'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789:,.-/()&\n ',
-        preserve_interword_spaces:'1', psm:6
+        tessedit_char_whitelist:'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789:,.-/()&\n ', preserve_interword_spaces:'1', psm:6
       });
       els.rawText.value=(data.text||'').trim();
       els.ocrStatus.textContent='OCR complete ✔';
     }catch(e){ els.ocrStatus.textContent='OCR error: '+e.message; }
   });
 
-  // Helpers
+  // Parsing helpers
   function smartClean(t){
     let s=t.replace(/[\u0000-\u001f\u007f]/g,' ').replace(/[^A-Za-z0-9:,\.\/()&\-\n ]/g,' ').replace(/[|_]{2,}/g,' ').replace(/\s{2,}/g,' ');
     s=s.replace(/\bAUGVST\b/gi,'AUGUST').replace(/\bORE\b/gi,'OR');
-    const lines=s.split('\n').map(l=>l.trim()).filter(Boolean).filter(l=>(l.replace(/[^A-Za-z]/g,'').length/Math.max(1,l.length))>0.35).filter(l=>l.length>=3);
+    const lines=s.split('\n').map(l=>l.trim()).filter(Boolean)
+      .filter(l=>(l.replace(/[^A-Za-z]/g,'').length/Math.max(1,l.length))>0.35)
+      .filter(l=>l.length>=3);
     return lines.join('\n');
   }
   function normalizeDateStr(s){
@@ -152,96 +176,70 @@
     const m=s.match(/^(\d{1,2})(?::(\d{2}))?\s*(am|pm)?$/);
     if(!m){ const m24=s.match(/^(\d{1,2})(?::(\d{2}))$/); if(m24){ return format12h(parseInt(m24[1],10),parseInt(m24[2]||'0',10)); } return null; }
     let h=parseInt(m[1],10),min=parseInt(m[2]||'0',10),ap=m[3]; if(!ap){ if(h>=13) return format12h(h,min); ap='pm'; }
-    if(ap==='am'&&h===12)h=0; if(ap==='pm'&&h<12)h+=12; return format12h(h,min);
+    if(ap==='am'&&h===12) h=0; if(ap==='pm'&&h<12) h+=12; return format12h(h,min);
   }
-  function parseTimesFromText(text){
-    const t=text.replace(/\u2013|\u2014|—|–/g,'-');
-    const r=t.match(/(\d{1,2}(?::?\d{2})?\s*(?:am|pm)?)\s*(?:-|\bto\b)\s*(\d{1,2}(?::?\d{2})?\s*(?:am|pm)?)/i);
-    if(r){ const a=parseTimeToken(r[1]); const b=parseTimeToken(r[2]); if(a||b) return {start:a||'', end:b||''}; }
-    const s=t.match(/(\b\d{1,2}(?::?\d{2})?\s*(?:am|pm)\b|\b\d{1,2}:\d{2}\b|\b\d{3,4}\b)/i);
-    if(s){ const a=parseTimeToken(s[1]); if(a) return {start:a, end:''}; }
-    return {start:'', end:''};
-  }
-  function briefNotes(text){ return text.trim().replace(/\s+/g,' ').split(' ').slice(0,5).join(' '); }
-
   function parseFromRaw(){
     const cleaned=smartClean(els.rawText.value);
     const lines=cleaned.split('\n').map(l=>l.trim()).filter(Boolean);
-    // Event
-    els.event.value = lines[0] || '';
-    // Location (venue + city/state if next line)
-    const locIdx = lines.findIndex(l => /(BEND\b|OR\b|Theatre|Theater|Pub|Park|Amphitheater|Arena|Hall|Center|Club|Bar)/i.test(l));
+    els.event.value=lines[0]||'';
+    const locIdx=lines.findIndex(l=>/(BEND\b|OR\b|Theatre|Theater|Pub|Park|Amphitheater|Arena|Hall|Center|Club|Bar)/i.test(l));
     if(locIdx>=0){
       const venue=lines[locIdx];
       const cityLine=lines[locIdx+1]&&/(BEND|OR|, *[A-Z]{2})/i.test(lines[locIdx+1])?lines[locIdx+1]:'';
       els.location.value=(venue+(cityLine?`, ${cityLine}`:'' )).replace(/\bORE\b/i,'OR').replace(/\s*,\s*/g,', ').trim();
-    }else{ els.location.value=lines[1]||''; }
-    // Date
-    const dateLine = lines.find(l=>/(Mon|Tue|Wed|Thu|Fri|Sat|Sun)|\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\b|\b\d{4}-\d{2}-\d{2}\b|\b\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4}\b|January|February|March|April|May|June|July|August|September|October|November|December/i.test(l))||'';
-    els.date.value = normalizeDateStr(dateLine);
-    // Times
-    const timeLine = lines.find(l=>/(\d{1,2}(:\d{2})?\s*(am|pm)\b|\b\d{1,2}:\d{2}\b|\b\d{3,4}\b).*(-|–|—|to)?/i.test(l))||'';
-    const times = /-|–|—|\bto\b/i.test(timeLine) ? timeLine.split(/-|–|—|\bto\b/i).map(parseTimeToken).map(x=>x||'') : [parseTimeToken(timeLine)||'', ''];
-    els.startTime.value = times[0]||''; els.endTime.value = times[1]||''; els.allDay.checked = !(times[0]||times[1]);
-    els.notes.value = briefNotes(cleaned);
+    } else { els.location.value=lines[1]||''; }
+    const dateLine=lines.find(l=>/(Mon|Tue|Wed|Thu|Fri|Sat|Sun)|\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\b|\b\d{4}-\d{2}-\d{2}\b|\b\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4}\b|January|February|March|April|May|June|July|August|September|October|November|December/i.test(l))||'';
+    els.date.value=normalizeDateStr(dateLine);
+    const tLine=lines.find(l=>/(\d{1,2}(:\d{2})?\s*(am|pm)\b|\b\d{1,2}:\d{2}\b|\b\d{3,4}\b).*(-|–|—|to)?/i.test(l))||'';
+    const times=/-|–|—|\bto\b/i.test(tLine)?tLine.split(/-|–|—|\bto\b/i).map(parseTimeToken).map(x=>x||''):[parseTimeToken(tLine)||'',''];
+    els.startTime.value=times[0]||''; els.endTime.value=times[1]||''; els.allDay.checked=!(times[0]||times[1]);
+    els.notes.value=smartClean(els.rawText.value).split(/\s+/).slice(0,5).join(' ');
   }
 
-  els.parseBtn.addEventListener('click', parseFromRaw);
-  els.quickOCR.addEventListener('click', ()=>els.ocrBtn.click());
-  els.quickParse.addEventListener('click', ()=>els.parseBtn.click());
-  els.quickSend.addEventListener('click', ()=>els.sendBtn.click());
-  function onTimesChanged(){ if(els.startTime.value||els.endTime.value) els.allDay.checked=false; }
-  els.startTime.addEventListener('input', onTimesChanged);
-  els.endTime.addEventListener('input', onTimesChanged);
-  els.allDay.addEventListener('change', ()=>{ if(els.allDay.checked){ els.startTime.value=''; els.endTime.value=''; } });
+  // Hooks
+  parseBtn.addEventListener('click', parseFromRaw);
+  quickOCR.addEventListener('click', ()=>ocrBtn.click());
+  quickParse.addEventListener('click', ()=>parseBtn.click());
+  quickSend.addEventListener('click', ()=>sendBtn.click());
+  startTime.addEventListener('input', ()=>{ if(startTime.value||endTime.value) allDay.checked=false; });
+  endTime .addEventListener('input', ()=>{ if(startTime.value||endTime.value) allDay.checked=false; });
+  allDay.addEventListener('change', ()=>{ if(allDay.checked){ startTime.value=''; endTime.value=''; } });
 
-  // Ping (GET) to test endpoint from phone
-  els.pingBtn.addEventListener('click', async ()=>{
-    els.pingStatus.textContent='Pinging…';
+  // Ping the endpoint (GET)
+  pingBtn.addEventListener('click', async ()=>{
+    pingStatus.textContent='Pinging…';
     try{
-      const r = await fetch(ENDPOINT, { method:'GET' });
-      const t = await r.text();
-      els.pingStatus.innerHTML = r.ok ? `<span class="ok">OK:</span> ${t}` : `<span class="err">Error:</span> ${t||r.status}`;
-    }catch(e){ els.pingStatus.innerHTML = `<span class="err">Network error:</span> ${e.message}`; }
+      const r=await fetch(ENDPOINT,{method:'GET'});
+      const t=await r.text();
+      pingStatus.innerHTML=r.ok?`<span class="ok">OK:</span> ${t}`:`<span class="err">Error:</span> ${t||r.status}`;
+    }catch(e){ pingStatus.innerHTML=`<span class="err">Network error:</span> ${e.message}`; }
   });
 
-  // Send to Sheet
-  els.sendBtn.addEventListener('click', async ()=>{
-    const fields = {
-      event:  els.event.value.trim(),
-      location: els.location.value.trim(),
-      date: els.date.value.trim(),
-      startTime: els.startTime.value.trim(),
-      endTime: els.endTime.value.trim(),
-      allDay: els.allDay.checked,
-      notes: els.notes.value.trim()
+  // Send to Google Sheet — using text/plain to avoid CORS preflight
+  sendBtn.addEventListener('click', async ()=>{
+    const fields={
+      event:event.value.trim(), location:location.value.trim(), date:date.value.trim(),
+      startTime:startTime.value.trim(), endTime:endTime.value.trim(), allDay:allDay.checked,
+      notes:notes.value.trim()
     };
-    if(!fields.event || !fields.date){ els.sendStatus.innerHTML='<span class="warnText">Need at least Event and Date.</span>'; return; }
+    if(!fields.event || !fields.date){ sendStatus.innerHTML='<span class="warnText">Need at least Event and Date.</span>'; return; }
     if(fields.allDay){ fields.startTime=''; fields.endTime=''; }
 
-    // camelCase + TitleCase for compatibility
-    const payload = Object.assign({}, fields, {
-      Event: fields.event, Location: fields.location, Date: fields.date,
-      StartTime: fields.startTime, EndTime: fields.endTime, AllDay: fields.allDay, Notes: fields.notes
+    const payload=Object.assign({},fields,{
+      Event:fields.event,Location:fields.location,Date:fields.date,
+      StartTime:fields.startTime,EndTime:fields.endTime,AllDay:fields.allDay,Notes:fields.notes
     });
 
-    els.sendStatus.textContent='Sending…'; els.sendBtn.disabled=true;
+    sendStatus.textContent='Sending…'; sendBtn.disabled=true;
     try{
-      const r = await fetch(ENDPOINT, {
-  method: 'POST',
-  // Use a "simple" content-type so Safari/Chrome won't do a CORS preflight (OPTIONS)
-  headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-  body: JSON.stringify(payload)
-});
-
-      const t = await r.text();
+      const r=await fetch(ENDPOINT,{ method:'POST', headers:{'Content-Type':'text/plain; charset=utf-8'}, body:JSON.stringify(payload) });
+      const t=await r.text();
       if(!r.ok) throw new Error(t||('HTTP '+r.status));
-      els.sendStatus.innerHTML='<span class="ok">Row appended ✔</span>';
+      sendStatus.innerHTML='<span class="ok">Row appended ✔</span>';
     }catch(e){
-      els.sendStatus.innerHTML='<span class="err">Send failed:</span> '+e.message+'<div class="helper">Ensure Apps Script access is “Anyone” and CORS handlers (GET/POST/OPTIONS) are deployed.</div>';
-    }finally{ els.sendBtn.disabled=false; }
+      sendStatus.innerHTML='<span class="err">Send failed:</span> '+e.message+'<div class="helper">If this persists, ensure Apps Script is deployed with Access “Anyone”, Execute as “Me”, and SPREADSHEET_ID/tab are correct.</div>';
+    }finally{ sendBtn.disabled=false; }
   });
 </script>
 </body>
 </html>
-
