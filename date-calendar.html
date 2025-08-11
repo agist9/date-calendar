@@ -12,9 +12,23 @@
   :root { --bg:#0b0f14; --fg:#e7f0f2; --muted:#9fb2ba; --accent:#2dd4bf; --accent2:#22c55e; --warn:#f59e0b; --err:#ef4444; --card:#121a22; --input:#0f1720; --border:#1f2a36; }
   *{box-sizing:border-box}
   html,body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
-  header{position:sticky;top:0;z-index:5;background:#0b0f14}
-  h1{margin:0;padding:14px 16px;font-size:20px;display:flex;align-items:center;gap:10px}
-  h1 .logo{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#60a5fa)}
+  /* Fixed header with notch padding and wrapping title */
+  header{
+    position:sticky;top:0;z-index:5;background:#0b0f14;
+    padding-top:env(safe-area-inset-top);
+  }
+  h1{
+    margin:0;padding:12px 16px;
+    min-height:calc(44px + env(safe-area-inset-top));
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    line-height:1.2;
+  }
+  h1 .logo{
+    display:inline-grid;place-items:center;width:28px;height:28px;
+    border-radius:10px;background:linear-gradient(135deg,var(--accent),#60a5fa);
+    flex-shrink:0;
+  }
+  h1 .title{font-size:clamp(16px, 3.8vw, 20px)}
   main{padding:12px;max-width:920px;margin:0 auto}
   .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;margin:12px 0}
   label{display:block;font-size:13px;color:var(--muted);margin:10px 0 6px}
@@ -36,7 +50,7 @@
 <script src="https://unpkg.com/luxon@3.4.4/build/global/luxon.min.js"></script>
 </head>
 <body>
-<header><h1><span class="logo">📅</span> Snap → Google Sheet: Date Calendar</h1></header>
+<header><h1><span class="logo">📅</span> <span class="title">Snap → Google Sheet: Date Calendar</span></h1></header>
 
 <main>
   <!-- Capture / OCR -->
@@ -88,17 +102,16 @@
 <script>
   /* ===== CONFIG ===== */
   const ENDPOINT = 'https://script.google.com/macros/s/AKfycbwlbzfKuN0bbHsEuT3ykv_z5F11rEUZ5yS2Be2u02I9_-sEBBpG9cEcjCkJ50Qn_rY/exec';
-  const LuxonDT = (typeof window!=='undefined' && window.__LuxonDT) ? window.__LuxonDT : luxon.DateTime;
-  if (typeof window!=='undefined') window.__LuxonDT = LuxonDT;
+  const LuxonDT = luxon.DateTime;
 
-  /* Mini SW for installability */
+  /* Mini SW for installability — bumped v4 */
   (function(){ if(!('serviceWorker' in navigator))return;
-    const sw=`self.addEventListener('install',e=>self.skipWaiting());self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));self.addEventListener('fetch',e=>{e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));});`;
+    const sw=`/* v4 */ self.addEventListener('install',e=>self.skipWaiting());self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));self.addEventListener('fetch',e=>{e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));});`;
     const url=URL.createObjectURL(new Blob([sw],{type:'text/javascript'}));
     navigator.serviceWorker.register(url).catch(()=>{});
   })();
 
-  /* Simple PWA icon (camera + sheet) */
+  /* Simple PWA icon + manifest bump v4 */
   (function makeIcons(){
     function rr(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
     function draw(size){const c=document.createElement('canvas');c.width=c.height=size;const g=c.getContext('2d'),rad=size*0.22;
@@ -108,213 +121,38 @@
       const cx=cbx+cbw*.5,cy=cby+cbh*.57,r=size*.085;g.beginPath();g.arc(cx,cy,r*1.35,0,2*Math.PI);g.fillStyle='#111827';g.fill();g.beginPath();g.arc(cx,cy,r,0,2*Math.PI);g.fillStyle='#60a5fa';g.fill();
       return c.toDataURL('image/png');}
     const i192=draw(192), i512=draw(512);
-    const l1=document.createElement('link');l1.rel='apple-touch-icon';l1.sizes='180x180';l1.href=i192;document.head.appendChild(l1);
-    const l2=document.createElement('link');l2.rel='icon';l2.href=i192;document.head.appendChild(l2);
-    const manifest={name:"Date Calendar",short_name:"DateCal",start_url:"./",display:"standalone",background_color:"#0b0f14",theme_color:"#0b0f14",
+    const manifest={name:"Date Calendar",short_name:"DateCal",start_url:"./?v=4",display:"standalone",background_color:"#0b0f14",theme_color:"#0b0f14",
       icons:[{src:i192,sizes:"192x192",type:"image/png",purpose:"any maskable"},{src:i512,sizes:"512x512",type:"image/png",purpose:"any maskable"}]};
     const ml=document.createElement('link');ml.rel='manifest';ml.href='data:application/json,'+encodeURIComponent(JSON.stringify(manifest));document.head.appendChild(ml);
+    const l1=document.createElement('link');l1.rel='apple-touch-icon';l1.sizes='180x180';l1.href=i192;document.head.appendChild(l1);
+    const l2=document.createElement('link');l2.rel='icon';l2.href=i192;document.head.appendChild(l2);
   })();
 
-  /* ------- Helpers & Elements ------- */
-  const $ = id => document.getElementById(id);
-  const els = {
-    file:$('file'), galleryFile:$('galleryFile'), galleryBtn:$('galleryBtn'),
+  const $=id=>document.getElementById(id);
+  const els={file:$('file'), galleryFile:$('galleryFile'), galleryBtn:$('galleryBtn'),
     ocrBtn:$('ocrBtn'), ocrProBtn:$('ocrProBtn'), clearBtn:$('clearBtn'),
     preview:$('preview'), imgWrap:$('imgWrap'), work:$('work'), ocrStatus:$('ocrStatus'),
     rawText:$('rawText'), parseBtn:$('parseBtn'),
     event:$('event'), location:$('location'), date:$('date'), startTime:$('startTime'), endTime:$('endTime'),
-    sendBtn:$('sendBtn'), sendStatus:$('sendStatus'),
-    pingBtn:$('pingBtn'), pingStatus:$('pingStatus')
-  };
+    sendBtn:$('sendBtn'), sendStatus:$('sendStatus'), pingBtn:$('pingBtn'), pingStatus:$('pingStatus')};
 
-  function showToast(msg, kind='ok', ms=2200){
-    const el=$('toast'); el.textContent=msg; el.className=''; el.classList.add('show', kind);
-    clearTimeout(showToast._t); showToast._t=setTimeout(()=>el.classList.remove('show'), ms);
-  }
+  function showToast(msg,kind='ok',ms=2200){const el=$('toast');el.textContent=msg;el.className='';el.classList.add('show',kind);clearTimeout(showToast._t);showToast._t=setTimeout(()=>el.classList.remove('show'),ms);}
 
-  /* ------- Image handling & OCR (with optional binarization) ------- */
-  let imgBlob=null, imgURL=null;
-  function setImage(file){
-    imgBlob=file; imgURL&&URL.revokeObjectURL(imgURL); imgURL=URL.createObjectURL(file);
-    els.preview.src=imgURL; els.imgWrap.style.display='block';
-    els.ocrBtn.disabled=false; els.ocrProBtn.disabled=false;
-  }
-  els.file.addEventListener('change', ()=>{ if(els.file.files[0]) setImage(els.file.files[0]); });
-  els.galleryBtn.addEventListener('click', ()=> els.galleryFile.click());
-  els.galleryFile.addEventListener('change', ()=>{ if(els.galleryFile.files[0]) setImage(els.galleryFile.files[0]); });
-  els.clearBtn.addEventListener('click', ()=>{ imgBlob=null; els.imgWrap.style.display='none'; els.rawText.value=''; els.ocrStatus.textContent=''; });
+  let imgBlob=null,imgURL=null;
+  function setImage(file){imgBlob=file;imgURL&&URL.revokeObjectURL(imgURL);imgURL=URL.createObjectURL(file);els.preview.src=imgURL;els.imgWrap.style.display='block';els.ocrBtn.disabled=false;els.ocrProBtn.disabled=false;}
+  els.file.addEventListener('change',()=>{if(els.file.files[0])setImage(els.file.files[0]);});
+  els.galleryBtn.addEventListener('click',()=>els.galleryFile.click());
+  els.galleryFile.addEventListener('change',()=>{if(els.galleryFile.files[0])setImage(els.galleryFile.files[0]);});
+  els.clearBtn.addEventListener('click',()=>{imgBlob=null;els.imgWrap.style.display='none';els.rawText.value='';els.ocrStatus.textContent='';});
 
-  async function recognizeFromBlob(file,{pro=false}={}){
-    const bmp=await createImageBitmap(file);
-    const maxW=1800, scale=Math.min(1,maxW/bmp.width), W=Math.floor(bmp.width*scale), H=Math.floor(bmp.height*scale);
-    const cvs=els.work, ctx=cvs.getContext('2d'); cvs.width=W; cvs.height=H; ctx.drawImage(bmp,0,0,W,H);
-    if(pro){
-      const img=ctx.getImageData(0,0,W,H), d=img.data; const contrast=1.35;
-      for(let i=0;i<d.length;i+=4){ let y=0.2126*d[i]+0.7152*d[i+1]+0.0722*d[i+2]; y=(y-128)*contrast+128; const v=y>180?255:0; d[i]=d[i+1]=d[i+2]=v; d[i+3]=255; }
-      ctx.putImageData(img,0,0);
-    }
-    return Tesseract.recognize(cvs,'eng',{tessedit_char_whitelist:'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789:,.-/()&@#\\n ',preserve_interword_spaces:'1',psm:6});
-  }
-  els.ocrBtn.addEventListener('click', async ()=>{ if(!imgBlob) return; els.ocrStatus.textContent='OCR…';
-    try{ const {data}=await recognizeFromBlob(imgBlob,{pro:false}); els.rawText.value=cleanInput((data.text||'').trim()); els.ocrStatus.textContent='OCR complete ✔'; showToast('OCR complete','ok'); }
-    catch(e){ els.ocrStatus.textContent='OCR error: '+e.message; showToast('OCR error','err'); }});
-  els.ocrProBtn.addEventListener('click', async ()=>{ if(!imgBlob) return; els.ocrStatus.textContent='Pro OCR…';
-    try{ const {data}=await recognizeFromBlob(imgBlob,{pro:true}); els.rawText.value=cleanInput((data.text||'').trim()); els.ocrStatus.textContent='Pro OCR complete ✔'; showToast('Pro OCR complete','ok'); }
-    catch(e){ els.ocrStatus.textContent='OCR error: '+e.message; showToast('OCR error','err'); }});
-
-  /* ------- Parsing ------- */
+  async function recognizeFromBlob(file,{pro=false}={}){const bmp=await createImageBitmap(file);const maxW=1800,scale=Math.min(1,maxW/bmp.width),W=Math.floor(bmp.width*scale),H=Math.floor(bmp.height*scale);const cvs=els.work,ctx=cvs.getContext('2d');cvs.width=W;cvs.height=H;ctx.drawImage(bmp,0,0,W,H);if(pro){const img=ctx.getImageData(0,0,W,H),d=img.data;const contrast=1.35;for(let i=0;i<d.length;i+=4){let y=0.2126*d[i]+0.7152*d[i+1]+0.0722*d[i+2];y=(y-128)*contrast+128;const v=y>180?255:0;d[i]=d[i+1]=d[i+2]=v;d[i+3]=255;}ctx.putImageData(img,0,0);}return Tesseract.recognize(cvs,'eng',{tessedit_char_whitelist:'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789:,.-/()&@#\\n ',preserve_interword_spaces:'1',psm:6});}
+  els.ocrBtn.addEventListener('click',async()=>{if(!imgBlob)return;els.ocrStatus.textContent='OCR…';try{const{data}=await recognizeFromBlob(imgBlob,{pro:false});els.rawText.value=cleanInput((data.text||'').trim());els.ocrStatus.textContent='OCR complete ✔';showToast('OCR complete','ok');}catch(e){els.ocrStatus.textContent='OCR error: '+e.message;showToast('OCR error','err');}});
+  els.ocrProBtn.addEventListener('click',async()=>{if(!imgBlob)return;els.ocrStatus.textContent='Pro OCR…';try{const{data}=await recognizeFromBlob(imgBlob,{pro:true});els.rawText.value=cleanInput((data.text||'').trim());els.ocrStatus.textContent='Pro OCR complete ✔';showToast('Pro OCR complete','ok');}catch(e){els.ocrStatus.textContent='OCR error: '+e.message;showToast('OCR error','err');}});
 
   const BEND_VENUES=['Hayden Homes Amphitheater','Les Schwab Amphitheater','Volcanic Theatre Pub','Tower Theatre','Old Mill','Hayden Homes Amphitheatre','Hayden Homes Ampitheater'];
   const VENUE_WORDS='Amphitheater|Amphitheatre|Theatre|Theater|Pub|Bar|Brew|Brewery|Taproom|Arena|Hall|Center|Centre|Club|Cafe|Park|Pavilion|Auditorium|Stadium|Saloon|Lounge|Venue|Mill';
   const VENUE_RE=new RegExp(`([A-Z][A-Za-z'&.-]+(?:\\s+[A-Z][A-Za-z'&.-]+){0,6})\\s+(${VENUE_WORDS})\\b`,'i');
 
-  function cleanInput(t){
-    return t.replace(/[\u0000-\u001f\u007f]/g,' ')
-            .replace(/\u2013|\u2014|—|–/g,'-')
-            .replace(/[|_]{2,}/g,' ')
-            .replace(/[^\w@#:,.\-\/()&\n ]/g,' ')
-            .replace(/\s{2,}/g,' ')
-            .trim();
-  }
+  function cleanInput(t){return t.replace(/[\u0000-\u001f\u007f]/g,' ').replace(/\u2013|\u2014|—|–/g,'-').replace(/[|_]{2,}/g,' ').replace(/[^\w@#:,.\-\/()&\n ]/g,' ').replace(/\s{2,}/g,' ').trim();}
 
-  function extractDateSpan(text){
-    const month='January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec';
-    const dow='Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sun|Mon|Tue|Tues|Wed|Thu|Fri|Sat';
-    const patterns=[
-      new RegExp(`\\b(?:${dow})\\s*,?\\s*(${month})\\s+(\\d{1,2})(?:st|nd|rd|th)?\\s*,?\\s*(\\d{2,4})?\\b`,'i'),
-      new RegExp(`\\b(${month})\\s+(\\d{1,2})(?:st|nd|rd|th)?\\s*,?\\s*(\\d{2,4})?\\b`,'i'),
-      /\b(\d{1,2})[\/-](\d{1,2})(?:[\/-](\d{2,4}))?\b/
-    ];
-    for(const re of patterns){
-      const m=text.match(re);
-      if(m){
-        const raw=m[0];
-        const comp = (()=>{
-          const guess = m[1] && isNaN(+m[1]) ? [m[1], m[2], m[3]||''].filter(Boolean).join(' ')
-                                            : [m[1], m[2], m[3]||''].filter(Boolean).join('/');
-          let dt=LuxonDT.fromFormat(guess,'LLL d yyyy'); if(!dt.isValid) dt=LuxonDT.fromFormat(guess,'LLLL d yyyy');
-          if(!dt.isValid) dt=LuxonDT.fromFormat(guess,'M/d/yy'); if(!dt.isValid) dt=LuxonDT.fromFormat(guess,'M/d/yyyy');
-          if(!dt.isValid){ const js=new Date(guess); if(!isNaN(js)) dt=LuxonDT.fromJSDate(js); }
-          if(dt.isValid){
-            const now=LuxonDT.now();
-            if(dt.year<now.year-1||dt.year>now.year+2) dt=dt.set({year:now.year});
-            if(dt<now.startOf('day') && now.diff(dt,'days').days>180) dt=dt.plus({years:1});
-            return dt.toFormat('EEE, LLLL d, yyyy');
-          }
-          return '';
-        })();
-        return {raw, pretty:comp, start:text.indexOf(raw), end:text.indexOf(raw)+raw.length};
-      }
-    }
-    return {raw:'', pretty:'', start:-1, end:-1};
-  }
-
-  function extractTimesSpan(text){
-    const t = text.replace(/\u2013|\u2014|—|–/g,'-');
-    let m = t.match(/(\b\d{1,2}(?::?\d{2})?\s*(?:am|pm)?)[ )]*[-to]{1,3}[ )]*(\d{1,2}(?::?\d{2})?\s*(?:am|pm)?)/i);
-    if(m){
-      const raw=m[0], a=normalizeTime(m[1]), b=normalizeTime(m[2]);
-      return {raw, start:a||'', end:b||'', startIdx:t.indexOf(raw), endIdx:t.indexOf(raw)+raw.length};
-    }
-    m = t.match(/show[^0-9]{0,6}(\d{1,2}(:\d{2})?\s*(?:am|pm)?)/i);
-    const showT=m?normalizeTime(m[1]):null;
-    const raw1 = m?m[0]:'';
-    if(showT) return {raw:raw1, start:showT, end:'', startIdx:t.indexOf(raw1), endIdx:t.indexOf(raw1)+raw1.length};
-    m = t.match(/(\b\d{1,2}(?::?\d{2})?\s*(?:am|pm)\b|\b\d{1,2}:\d{2}\b|\b\d{3,4}\b)/i);
-    if(m){ const raw=m[0]; const a=normalizeTime(m[1]||m[0]); return {raw, start:a||'', end:'', startIdx:t.indexOf(raw), endIdx:t.indexOf(raw)+raw.length}; }
-    return {raw:'', start:'', end:'', startIdx:-1, endIdx:-1};
-  }
-
-  function normalizeTime(tok){
-    let s=(tok||'').toLowerCase().replace(/\./g,'').replace(/\s+/g,' ');
-    s=s.replace(/^(\d{1,2})(\d{2})\s*(am|pm)$/,'$1:$2 $3').replace(/^(\d{1,2})(\d{2})$/,'$1:$2');
-    let m=s.match(/^(\d{1,2})(?::(\d{2}))?\s*(am|pm)$/); if(m){ let h=+m[1],mm=+(m[2]||0),ap=m[3]; if(ap==='am'&&h===12)h=0; if(ap==='pm'&&h<12)h+=12; return format12h(h,mm); }
-    m=s.match(/^(\d{1,2})(?::(\d{2}))$/); if(m){ return format12h(+m[1],+(m[2]||0)); }
-    m=s.match(/^(\d{3,4})$/); if(m){ const n=m[1]; const h=+(n.length===3?n[0]:n.slice(0,2)),mm=+(n.length===3?n.slice(1):n.slice(2)); if(h<=24&&mm<60) return format12h(h,mm); }
-    m=s.match(/^(\d{1,2})$/); if(m){ const h=+m[1]; if(h>=1&&h<=12) return format12h(h,0); }
-    return '';
-  }
-  function format12h(h24,min){ const ap=h24>=12?'PM':'AM'; let h=h24%12; if(h===0) h=12; const mm=String(min||0).padStart(2,'0'); return `${h}:${mm} ${ap}`; }
-
-  function extractVenueSpan(text){
-    for(const v of BEND_VENUES){
-      const i=text.toLowerCase().indexOf(v.toLowerCase());
-      if(i!==-1){ const pretty = /Bend|, OR/i.test(text) ? v : `${v}, Bend, OR`; return {raw:v, pretty, start:i, end:i+v.length}; }
-    }
-    const m=text.match(VENUE_RE);
-    if(m){ const raw = `${m[1]} ${m[2]}`; const i=text.indexOf(m[0]); const pretty = /Bend|, OR/i.test(text) ? raw : `${raw}, Bend, OR`; return {raw, pretty, start:i, end:i+raw.length}; }
-    const m2=text.match(/\b([A-Z][A-Za-z'.-]{2,})\s*,\s*([A-Z]{2})\b/);
-    if(m2){ const raw=m2[0]; const i=text.indexOf(raw); return {raw, pretty:raw, start:i, end:i+raw.length}; }
-    return {raw:'', pretty:'', start:-1, end:-1};
-  }
-
-  function buildEventTitle(text, spans){
-    let out=text;
-    for(const s of spans){ if(s && s.start>=0) out = out.slice(0,s.start) + ' ' + out.slice(s.end); }
-    out = out.replace(/\s+(at|in|on|@)\s+/ig,' ').replace(/\s{2,}/g,' ').trim();
-    const words = out.split(/\s+/).filter(Boolean);
-    if(words.length<=10) return out;
-    return words.slice(0,8).join(' ');
-  }
-
-  function parseAll(raw){
-    const text = cleanInput(raw);
-    const d = extractDateSpan(text);
-    const t = extractTimesSpan(text);
-    const v = extractVenueSpan(text);
-
-    const event = buildEventTitle(text, [d, t, v]) || text.split(/\s+/).slice(0,8).join(' ');
-    return { event, location:v.pretty, date:d.pretty, start:t.start, end:t.end };
-  }
-
-  function applyParsed(p){
-    els.event.value=p.event||'';
-    els.location.value=p.location||'';
-    els.date.value=p.date||'';
-    els.startTime.value=p.start||'';
-    els.endTime.value=p.end||'';
-  }
-
-  els.parseBtn.addEventListener('click', ()=>{ const p=parseAll(els.rawText.value||''); applyParsed(p); showToast('Parsed fields','ok'); });
-
-  // Ping
-  els.pingBtn.addEventListener('click', async ()=>{
-    els.pingStatus.textContent='Pinging…';
-    try{
-      const r=await fetch(ENDPOINT,{method:'GET'}); const t=await r.text();
-      if(r.ok){ els.pingStatus.innerHTML=`<span class="ok">OK:</span> ${t}`; showToast('Ping OK','ok'); }
-      else { els.pingStatus.innerHTML=`<span class="err">Error:</span> ${t||r.status}`; showToast('Ping failed','err'); }
-    } catch(e){ els.pingStatus.innerHTML=`<span class="err">Network error:</span> ${e.message}`; showToast('Network error','err'); }
-  });
-
-  // Send (text/plain to avoid preflight)
-  els.sendBtn.addEventListener('click', async ()=>{
-    const fields={
-      event:els.event.value.trim(),
-      location:els.location.value.trim(),
-      date:els.date.value.trim(),
-      startTime:els.startTime.value.trim(),
-      endTime:els.endTime.value.trim()
-    };
-    if(!fields.event||!fields.date){
-      els.sendStatus.innerHTML='<span class="warnText">Need at least Event and Date.</span>';
-      showToast('Add Event & Date','err'); return;
-    }
-    const payload=Object.assign({},fields,{
-      Event:fields.event, Location:fields.location, Date:fields.date,
-      StartTime:fields.startTime, EndTime:fields.endTime
-    });
-
-    els.sendBtn.disabled=true; els.sendStatus.textContent='Sending…'; showToast('Sending…','ok',1200);
-    try{
-      const r=await fetch(ENDPOINT,{ method:'POST', headers:{'Content-Type':'text/plain; charset=utf-8'}, body:JSON.stringify(payload) });
-      const t=await r.text(); if(!r.ok) throw new Error(t||('HTTP '+r.status));
-      els.sendStatus.innerHTML='<span class="ok">Row appended ✔</span>'; showToast('Push successful ✔','ok');
-    }catch(e){
-      els.sendStatus.innerHTML='<span class="err">Send failed:</span> '+e.message+'<div class="helper">Check Execute as=Me, Access=Anyone, Sheet ID/tab name.</div>';
-      showToast('Push failed','err');
-    }finally{ els.sendBtn.disabled=false; }
-  });
-</script>
-</body>
-</html>
+  function extractDateSpan(text){const month='January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec';const dow='Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sun|Mon|Tue|Tues|Wed|Thu|Fri|Sat';const patterns=[new RegExp(`\\b(?:${dow})\\s*,?\\s*(${month})\\s+(\\d{1,2})(?:st|nd|rd|th)?\\s*,?\\s*(\\d{2,4})?\\b`,'i'),new RegExp(`\\b(${month})\\s+(\\d{1,2})(?:st|nd|rd|th)?\\s*,?\\s*(\\d{2,4})?\\b`,'i'),/\b(\d{1,2})[\/-](\d{1,2})(?:[\/
