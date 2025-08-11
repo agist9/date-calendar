@@ -14,25 +14,11 @@
   html,body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
 
   /* Header below iPhone status bar */
-  header{
-    position:sticky; top:0; z-index:30; background:#0b0f14;
-    padding-top: calc(env(safe-area-inset-top) + 12px);
-  }
-  h1{
-    margin:0; padding:12px 16px;
-    min-height:calc(44px + env(safe-area-inset-top));
-    display:flex; align-items:center; gap:10px; flex-wrap:wrap; line-height:1.2;
-  }
-  .burger{
-    appearance:none;background:#0f172a;border:1px solid #1f2a36;color:#e7f0f2;
-    width:38px;height:38px;border-radius:10px;display:inline-grid;place-items:center;cursor:pointer;flex-shrink:0;
-  }
+  header{position:sticky; top:0; z-index:30; background:#0b0f14; padding-top:calc(env(safe-area-inset-top) + 12px)}
+  h1{margin:0; padding:12px 16px; min-height:calc(44px + env(safe-area-inset-top)); display:flex; align-items:center; gap:10px; flex-wrap:wrap; line-height:1.2}
+  .burger{appearance:none;background:#0f172a;border:1px solid #1f2a36;color:#e7f0f2;width:38px;height:38px;border-radius:10px;display:inline-grid;place-items:center;cursor:pointer;flex-shrink:0}
   .burger svg{width:20px;height:20px}
-  h1 .logo{
-    display:inline-grid; place-items:center; width:28px; height:28px;
-    border-radius:10px; background:linear-gradient(135deg,var(--accent),#60a5fa);
-    flex-shrink:0;
-  }
+  h1 .logo{display:inline-grid; place-items:center; width:28px; height:28px; border-radius:10px; background:linear-gradient(135deg,var(--accent),#60a5fa); flex-shrink:0}
   h1 .title{font-size:clamp(16px, 3.8vw, 20px)}
 
   main{padding:12px;max-width:920px;margin:0 auto}
@@ -57,10 +43,9 @@
   /* Camera overlay */
   .camOverlay{position:fixed; inset:0; z-index:40; background:#000; display:none}
   .camActive{display:block}
-  .camChrome{position:absolute; inset:0; display:flex; flex-direction:column;
-    padding:calc(env(safe-area-inset-top) + 8px) 8px calc(env(safe-area-inset-bottom) + 8px); gap:8px;}
-  video#cam{width:100%; height:auto; max-height:60vh; background:#000; border-radius:14px; object-fit:cover;}
-  .camBar{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:auto;}
+  .camChrome{position:absolute; inset:0; display:flex; flex-direction:column; padding:calc(env(safe-area-inset-top) + 8px) 8px calc(env(safe-area-inset-bottom) + 8px); gap:8px}
+  video#cam{width:100%; height:auto; max-height:60vh; background:#000; border-radius:14px; object-fit:cover}
+  .camBar{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:auto}
   .camBtn{appearance:none;border:0;border-radius:999px;padding:14px 18px;font-weight:800;cursor:pointer}
   .shutter{background:var(--accent); color:#00110e}
   .closeCam{background:#111827; color:#e7f0f2; border:1px solid #374151}
@@ -70,25 +55,15 @@
   /* Drawer (History) */
   .shade{position:fixed; inset:0; background:var(--overlay); opacity:0; pointer-events:none; transition:.2s; z-index:35}
   .shade.on{opacity:1; pointer-events:auto}
-  .drawer{
-    position:fixed; inset:0 auto 0 0; width:86vw; max-width:360px; background:#0b1220; border-right:1px solid #1f2a36;
-    transform:translateX(-100%); transition:transform .23s ease; z-index:50;
-    padding:calc(env(safe-area-inset-top) + 10px) 12px 12px;
-    display:flex; flex-direction:column; gap:10px;
-  }
+  .drawer{position:fixed; inset:0 auto 0 0; width:86vw; max-width:360px; background:#0b1220; border-right:1px solid #1f2a36;
+    transform:translateX(-100%); transition:transform .23s ease; z-index:50; padding:calc(env(safe-area-inset-top) + 10px) 12px 12px; display:flex; flex-direction:column; gap:10px}
   .drawer.on{transform:translateX(0)}
   .drawer h2{margin:0; font-size:18px}
   .historyActions{display:flex; gap:8px}
   .historyList{overflow:auto; -webkit-overflow-scrolling:touch; flex:1; border-top:1px solid #1f2a36}
   .itemWrap{position:relative; overflow:hidden; touch-action:pan-y; user-select:none}
-  .itemDelete{
-    position:absolute; top:0; right:0; bottom:0; width:92px; background:var(--del); color:#fff;
-    display:grid; place-items:center; font-weight:800;
-  }
-  .item{
-    background:#0f172a; border-bottom:1px solid #1f2a36; padding:12px; transform:translateX(0); transition:transform .15s ease;
-    display:flex; gap:8px; align-items:center;
-  }
+  .itemDelete{position:absolute; top:0; right:0; bottom:0; width:92px; background:var(--del); color:#fff; display:grid; place-items:center; font-weight:800}
+  .item{background:#0f172a; border-bottom:1px solid #1f2a36; padding:12px; transform:translateX(0); transition:transform .15s ease; display:flex; gap:8px; align-items:center}
   .itemTitle{font-weight:700}
   .itemMeta{font-size:12px; color:#9fb2ba}
   .pill{padding:2px 8px; border-radius:999px; background:#0b1a2a; border:1px solid #1f2a36; font-size:11px; color:#9fb2ba}
@@ -121,7 +96,7 @@
   <div id="historyList" class="historyList"></div>
 </aside>
 
-<!-- Camera overlay (auto-opens on load; has Gallery inside) -->
+<!-- Camera overlay -->
 <div id="camOverlay" class="camOverlay">
   <div class="camChrome">
     <video id="cam" playsinline autoplay muted></video>
@@ -186,24 +161,23 @@
   const ENDPOINT = 'https://script.google.com/macros/s/AKfycbwlbzfKuN0bbHsEuT3ykv_z5F11rEUZ5yS2Be2u02I9_-sEBBpG9cEcjCkJ50Qn_rY/exec';
   const LuxonDT = luxon.DateTime;
 
-  /* Mini SW for installability — bumped v7 */
+  /* Mini SW — v8 */
   (function(){ if(!('serviceWorker' in navigator))return;
-    const sw=`/* v7 */ self.addEventListener('install',e=>self.skipWaiting());self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));self.addEventListener('fetch',e=>{e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));});`;
+    const sw=`/* v8 */ self.addEventListener('install',e=>self.skipWaiting());self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));self.addEventListener('fetch',e=>{e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));});`;
     const url=URL.createObjectURL(new Blob([sw],{type:'text/javascript'}));
     navigator.serviceWorker.register(url).catch(()=>{});
   })();
 
-  /* Simple PWA icon + manifest bump v7 */
+  /* Manifest/icon — v8 */
   (function makeIcons(){
     function rr(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
     function draw(size){const c=document.createElement('canvas');c.width=c.height=size;const g=c.getContext('2d'),rad=size*0.22;
       const lg=g.createLinearGradient(0,0,size,size);lg.addColorStop(0,'#0ea5e9');lg.addColorStop(1,'#14b8a6');g.fillStyle=lg;rr(g,0,0,size,size,rad);g.fill();
       const x=size*.18,y=size*.18,w=size*.52,h=size*.56;g.fillStyle='#fff';rr(g,x,y,w,h,size*.06);g.fill();g.fillStyle='#e2e8f0';g.beginPath();g.moveTo(x+w*.72,y);g.lineTo(x+w,y);g.lineTo(x+w,y+h*.28);g.closePath();g.fill();
       const cbx=size*.42,cby=size*.46,cbw=size*.42,cbh=size*.30;g.fillStyle='#0f172a';rr(g,cbx,cby,cbw,cbh,size*.06);g.fill();g.fillStyle='#1f2937';g.fillRect(cbx,cby-size*.06,cbw,size*.06);
-      const cx=cbx+cbw*.5,cy=cby+cbh*.57,r=size*.085;g.beginPath();g.arc(cx,cy,r*1.35,0,2*Math.PI);g.fillStyle='#111827';g.fill();g.beginPath();g.arc(cx,cy,r,0,2*Math.PI);g.fillStyle='#60a5fa';g.fill();
-      return c.toDataURL('image/png');}
+      const cx=cbx+cbw*.5,cy=cby+cbh*.57,r=size*.085;g.beginPath();g.arc(cx,cy,r*1.35,0,2*Math.PI);g.fillStyle='#111827';g.fill();g.beginPath();g.arc(cx,cy,r,0,2*Math.PI);g.fillStyle='#60a5fa';g.fill(); return c.toDataURL('image/png');}
     const i192=draw(192), i512=draw(512);
-    const manifest={name:"Date Calendar",short_name:"DateCal",start_url:"./?v=7",display:"standalone",background_color:"#0b0f14",theme_color:"#0b0f14",
+    const manifest={name:"Date Calendar",short_name:"DateCal",start_url:"./?v=8",display:"standalone",background_color:"#0b0f14",theme_color:"#0b0f14",
       icons:[{src:i192,sizes:"192x192",type:"image/png",purpose:"any maskable"},{src:i512,sizes:"512x512",type:"image/png",purpose:"any maskable"}]};
     const ml=document.createElement('link');ml.rel='manifest';ml.href='data:application/json,'+encodeURIComponent(JSON.stringify(manifest));document.head.appendChild(ml);
     const l1=document.createElement('link');l1.rel='apple-touch-icon';l1.sizes='180x180';l1.href=i192;document.head.appendChild(l1);
@@ -231,16 +205,8 @@
   const HK='datecal_history_v1';
   function loadHistory(){ try{ return JSON.parse(localStorage.getItem(HK)||'[]'); }catch{ return []; } }
   function saveHistory(arr){ localStorage.setItem(HK, JSON.stringify(arr)); }
-  function addHistory(entry){
-    const arr=loadHistory();
-    arr.unshift(entry); // newest first
-    if(arr.length>200) arr.pop();
-    saveHistory(arr); renderHistory();
-  }
-  function deleteHistory(id){
-    const arr=loadHistory().filter(x=>x.id!==id);
-    saveHistory(arr); renderHistory();
-  }
+  function addHistory(entry){ const arr=loadHistory(); arr.unshift(entry); if(arr.length>200) arr.pop(); saveHistory(arr); renderHistory(); }
+  function deleteHistory(id){ const arr=loadHistory().filter(x=>x.id!==id); saveHistory(arr); renderHistory(); }
   function renderHistory(){
     const arr=loadHistory();
     els.historyCount.textContent=arr.length;
@@ -250,90 +216,57 @@
       const wrap=document.createElement('div'); wrap.className='itemWrap'; wrap.dataset.id=item.id;
       const del=document.createElement('div'); del.className='itemDelete'; del.textContent='Delete';
       const row=document.createElement('div'); row.className='item';
-      row.innerHTML=`
-        <div style="flex:1;min-width:0">
+      row.innerHTML=`<div style="flex:1;min-width:0">
           <div class="itemTitle" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(item.event||'(No title)')}</div>
           <div class="itemMeta">${escapeHtml(item.date||'')}${item.location?` • ${escapeHtml(item.location)}`:''}</div>
-        </div>
-      `;
+        </div>`;
       wrap.appendChild(del); wrap.appendChild(row); list.appendChild(wrap);
-
-      // Tap to load
-      row.addEventListener('click', ()=>{
-        els.event.value=item.event||'';
-        els.location.value=item.location||'';
-        els.date.value=item.date||'';
-        els.startTime.value=item.startTime||'';
-        els.endTime.value=item.endTime||'';
-        closeDrawer();
-        showToast('Loaded from history','ok');
-      });
-      // Delete tap
+      row.addEventListener('click', ()=>{ els.event.value=item.event||''; els.location.value=item.location||''; els.date.value=item.date||''; els.startTime.value=item.startTime||''; els.endTime.value=item.endTime||''; closeDrawer(); showToast('Loaded from history','ok'); });
       del.addEventListener('click', ()=> deleteHistory(item.id));
-      // Swipe to delete
       attachSwipeDelete(wrap, row, item.id);
     }
   }
   function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
-
   function attachSwipeDelete(wrap, row, id){
-    let sx=0, dx=0, dragging=false;
-    const threshold=80, max=92;
+    let sx=0, dx=0, dragging=false; const threshold=80, max=92;
+    function getX(e){ return e.touches? e.touches[0].clientX : e.clientX; }
     function onStart(e){ dragging=true; sx=getX(e); dx=0; row.style.transition='none'; }
     function onMove(e){ if(!dragging) return; dx=Math.min(0, getX(e)-sx); row.style.transform=`translateX(${Math.max(-max,dx)}px)`; }
-    function onEnd(){ if(!dragging) return; dragging=false; row.style.transition='transform .15s ease';
-      if(Math.abs(dx)>threshold){ row.style.transform=`translateX(${-max}px)`; } else { row.style.transform='translateX(0)'; }
-    }
-    function getX(e){ return e.touches? e.touches[0].clientX : e.clientX; }
-    row.addEventListener('touchstart', onStart, {passive:true});
-    row.addEventListener('touchmove', onMove, {passive:true});
-    row.addEventListener('touchend', onEnd);
-    row.addEventListener('mousedown', onStart);
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onEnd);
+    function onEnd(){ if(!dragging) return; dragging=false; row.style.transition='transform .15s ease'; row.style.transform=(Math.abs(dx)>threshold)?`translateX(${-max}px)`:'translateX(0)'; }
+    row.addEventListener('touchstart', onStart, {passive:true}); row.addEventListener('touchmove', onMove, {passive:true}); row.addEventListener('touchend', onEnd);
+    row.addEventListener('mousedown', onStart); window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onEnd);
   }
-
   function openDrawer(){ els.drawer.classList.add('on'); els.shade.classList.add('on'); els.drawer.setAttribute('aria-hidden','false'); }
   function closeDrawer(){ els.drawer.classList.remove('on'); els.shade.classList.remove('on'); els.drawer.setAttribute('aria-hidden','true'); }
   els.burger.addEventListener('click', openDrawer);
   els.closeDrawerBtn.addEventListener('click', closeDrawer);
   els.shade.addEventListener('click', closeDrawer);
-  els.newEventBtn.addEventListener('click', ()=>{
-    clearAll();
-    closeDrawer();
-    showToast('New event','ok');
-    // Optionally re-open camera for a fresh snap:
-    startCamera();
-  });
+  els.newEventBtn.addEventListener('click', ()=>{ clearAll(); closeDrawer(); showToast('New event','ok'); startCamera(); });
 
   function clearAll(){
     ['event','location','date','startTime','endTime','rawText'].forEach(id=>{ els[id].value=''; });
-    els.preview.removeAttribute('src'); els.imgWrap.style.display='none'; imgBlob=null;
-    els.ocrStatus.textContent='';
+    els.preview.removeAttribute('src'); els.imgWrap.style.display='none'; imgBlob=null; els.ocrStatus.textContent='';
   }
 
   /* ------- Image handling & OCR ------- */
   let imgBlob=null,imgURL=null;
   function setImage(file){
-    imgBlob=file;
-    if(imgURL) URL.revokeObjectURL(imgURL);
+    imgBlob=file; if(imgURL) URL.revokeObjectURL(imgURL);
     imgURL=URL.createObjectURL(file);
     els.preview.src=imgURL; els.imgWrap.style.display='block';
     els.ocrBtn.disabled=false; els.ocrProBtn.disabled=false;
-    setTimeout(()=>els.ocrBtn.click(), 200); // auto OCR
+    setTimeout(()=>els.ocrBtn.click(), 200);
   }
   els.file.addEventListener('change',()=>{ if(els.file.files[0]) setImage(els.file.files[0]); });
   els.galleryBtn.addEventListener('click', ()=> els.galleryFile.click());
   els.galleryFile.addEventListener('change', ()=>{ if(els.galleryFile.files[0]) setImage(els.galleryFile.files[0]); });
   els.clearBtn.addEventListener('click', clearAll);
 
-  /* OCR impl */
   async function recognizeFromBlob(file,{pro=false}={}){
     const bmp=await createImageBitmap(file);
     const maxW=1800, scale=Math.min(1,maxW/bmp.width), W=Math.floor(bmp.width*scale), H=Math.floor(bmp.height*scale);
     const cvs=els.work, ctx=cvs.getContext('2d'); cvs.width=W; cvs.height=H; ctx.drawImage(bmp,0,0,W,H);
-    if(pro){
-      const img=ctx.getImageData(0,0,W,H), d=img.data; const contrast=1.35;
+    if(pro){ const img=ctx.getImageData(0,0,W,H), d=img.data; const contrast=1.35;
       for(let i=0;i<d.length;i+=4){ let y=0.2126*d[i]+0.7152*d[i+1]+0.0722*d[i+2]; y=(y-128)*contrast+128; const v=y>180?255:0; d[i]=d[i+1]=d[i+2]=v; d[i+3]=255; }
       ctx.putImageData(img,0,0);
     }
@@ -346,7 +279,7 @@
     try{ const {data}=await recognizeFromBlob(imgBlob,{pro:true}); els.rawText.value=cleanInput((data.text||'').trim()); els.ocrStatus.textContent='Pro OCR complete ✔'; showToast('Pro OCR complete','ok'); }
     catch(e){ els.ocrStatus.textContent='OCR error: '+e.message; showToast('OCR error','err'); }});
 
-  /* ------- Parsing ------- */
+  /* ------- Parsing helpers ------- */
   const BEND_VENUES=['Hayden Homes Amphitheater','Les Schwab Amphitheater','Volcanic Theatre Pub','Tower Theatre','Old Mill','Hayden Homes Amphitheatre','Hayden Homes Ampitheater'];
   const VENUE_WORDS='Amphitheater|Amphitheatre|Theatre|Theater|Pub|Bar|Brew|Brewery|Taproom|Arena|Hall|Center|Centre|Club|Cafe|Park|Pavilion|Auditorium|Stadium|Saloon|Lounge|Venue|Mill';
   const VENUE_RE=new RegExp(`([A-Z][A-Za-z'&.-]+(?:\\s+[A-Z][A-Za-z'&.-]+){0,6})\\s+(${VENUE_WORDS})\\b`,'i');
@@ -431,13 +364,26 @@
     return {raw:'', pretty:'', start:-1, end:-1};
   }
 
+  // ===== FIXED: buildEventTitle removes time/date/venue spans and strips stray times =====
   function buildEventTitle(text, spans){
-    let out=text;
-    for(const s of spans){ if(s && s.start>=0) out = out.slice(0,s.start) + ' ' + out.slice(s.end); }
-    out = out.replace(/\s+(at|in|on|@)\s+/ig,' ').replace(/\s{2,}/g,' ').trim();
+    let out = text;
+    for (const s of spans){
+      if (!s) continue;
+      const a = (typeof s.startIdx === 'number') ? s.startIdx : s.start;
+      const b = (typeof s.endIdx === 'number') ? s.endIdx   : s.end;
+      if (typeof a === 'number' && a >= 0 && typeof b === 'number' && b >= 0){
+        out = out.slice(0, a) + ' ' + out.slice(b);
+      }
+    }
+    out = out
+      .replace(/\b\d{1,2}(?::?\d{2})?\s*(?:am|pm)?\s*[-–to]{1,3}\s*\d{1,2}(?::?\d{2})?\s*(?:am|pm)?\b/ig, ' ')
+      .replace(/\b\d{1,2}(?::?\d{2})?\s*(?:am|pm)\b/ig, ' ')
+      .replace(/\b(?:[01]?\d|2[0-3])(?::?\d{2})\b/ig, ' ')
+      .replace(/\s+(at|in|on|@)\s+/ig,' ')
+      .replace(/\s{2,}/g,' ')
+      .trim();
     const words = out.split(/\s+/).filter(Boolean);
-    if(words.length<=10) return out;
-    return words.slice(0,8).join(' ');
+    return (words.length <= 10) ? out : words.slice(0,8).join(' ');
   }
 
   function parseAll(raw){
@@ -445,7 +391,6 @@
     const d = extractDateSpan(text);
     const t = extractTimesSpan(text);
     const v = extractVenueSpan(text);
-
     const event = buildEventTitle(text, [d, t, v]) || text.split(/\s+/).slice(0,8).join(' ');
     return { event, location:v.pretty, date:d.pretty, start:t.start, end:t.end };
   }
@@ -457,40 +402,27 @@
     els.startTime.value=p.start||'';
     els.endTime.value=p.end||'';
   }
-
   els.parseBtn.addEventListener('click', ()=>{ const p=parseAll(els.rawText.value||''); applyParsed(p); showToast('Parsed fields','ok'); });
 
   // Ping
   els.pingBtn.addEventListener('click', async ()=>{
     els.pingStatus.textContent='Pinging…';
-    try{
-      const r=await fetch(ENDPOINT,{method:'GET'}); const t=await r.text();
+    try{ const r=await fetch(ENDPOINT,{method:'GET'}); const t=await r.text();
       if(r.ok){ els.pingStatus.innerHTML=`<span class="ok">OK:</span> ${t}`; showToast('Ping OK','ok'); }
       else { els.pingStatus.innerHTML=`<span class="err">Error:</span> ${t||r.status}`; showToast('Ping failed','err'); }
     } catch(e){ els.pingStatus.innerHTML=`<span class="err">Network error:</span> ${e.message}`; showToast('Network error','err'); }
   });
 
-  // Send (text/plain to avoid preflight) + save to History
+  // Send + save to History
   els.sendBtn.addEventListener('click', async ()=>{
-    const fields={
-      event:els.event.value.trim(),
-      location:els.location.value.trim(),
-      date:els.date.value.trim(),
-      startTime:els.startTime.value.trim(),
-      endTime:els.endTime.value.trim()
-    };
-    if(!fields.event||!fields.date){
-      els.sendStatus.innerHTML='<span class="warnText">Need at least Event and Date.</span>';
-      showToast('Add Event & Date','err'); return;
-    }
+    const fields={ event:els.event.value.trim(), location:els.location.value.trim(), date:els.date.value.trim(), startTime:els.startTime.value.trim(), endTime:els.endTime.value.trim() };
+    if(!fields.event||!fields.date){ els.sendStatus.innerHTML='<span class="warnText">Need at least Event and Date.</span>'; showToast('Add Event & Date','err'); return; }
     const payload={...fields, Event:fields.event, Location:fields.location, Date:fields.date, StartTime:fields.startTime, EndTime:fields.endTime};
-
     els.sendBtn.disabled=true; els.sendStatus.textContent='Sending…'; showToast('Sending…','ok',1200);
     try{
       const r=await fetch(ENDPOINT,{ method:'POST', headers:{'Content-Type':'text/plain; charset=utf-8'}, body:JSON.stringify(payload) });
       const t=await r.text(); if(!r.ok) throw new Error(t||('HTTP '+r.status));
       els.sendStatus.innerHTML='<span class="ok">Row appended ✔</span>'; showToast('Push successful ✔','ok');
-      // Save to history
       addHistory({ id:Date.now(), ...fields });
     }catch(e){
       els.sendStatus.innerHTML='<span class="err">Send failed:</span> '+e.message+'<div class="helper">Check Execute as=Me, Access=Anyone, Sheet ID/tab name.</div>';
@@ -503,56 +435,31 @@
   async function startCamera(){
     try{
       camStream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:{ ideal:'environment' } }, audio:false });
-      els.cam.srcObject = camStream;
-      els.camOverlay.classList.add('camActive');
+      els.cam.srcObject = camStream; els.camOverlay.classList.add('camActive');
     }catch(err){
-      console.warn('Camera start failed:', err);
-      els.camOverlay.classList.remove('camActive');
-      showToast('Camera permission blocked — using Gallery', 'err', 2600);
+      els.camOverlay.classList.remove('camActive'); showToast('Camera permission blocked — using Gallery','err',2600);
       setTimeout(()=>els.file.click(), 250);
     }
   }
-  function stopCamera(){
-    if(camStream){ camStream.getTracks().forEach(t=>t.stop()); camStream=null; }
-    els.cam.srcObject=null;
-    els.camOverlay.classList.remove('camActive');
-  }
+  function stopCamera(){ if(camStream){ camStream.getTracks().forEach(t=>t.stop()); camStream=null; } els.cam.srcObject=null; els.camOverlay.classList.remove('camActive'); }
   async function capturePhoto(){
     if(!camStream){ await startCamera(); if(!camStream) return; }
-    const track = camStream.getVideoTracks()[0];
-    const imgCap = ('ImageCapture' in window) ? new ImageCapture(track) : null;
+    const track=camStream.getVideoTracks()[0]; const ic=('ImageCapture' in window)? new ImageCapture(track):null;
     try{
       let blob;
-      if(imgCap && imgCap.takePhoto){ blob = await imgCap.takePhoto(); }
-      else{
-        const video = els.cam;
-        const w = video.videoWidth || 1280;
-        const h = video.videoHeight || 720;
-        els.work.width=w; els.work.height=h;
-        const ctx=els.work.getContext('2d');
-        ctx.drawImage(video,0,0,w,h);
-        blob = await new Promise(res=>els.work.toBlob(res,'image/jpeg',0.92));
-      }
-      const file = new File([blob], `snap-${Date.now()}.jpg`, {type:'image/jpeg'});
-      stopCamera();
-      setImage(file);
-    }catch(e){
-      console.error('Capture failed', e);
-      showToast('Capture failed', 'err');
-    }
+      if(ic && ic.takePhoto){ blob=await ic.takePhoto(); }
+      else { const v=els.cam, w=v.videoWidth||1280, h=v.videoHeight||720; els.work.width=w; els.work.height=h; const ctx=els.work.getContext('2d'); ctx.drawImage(v,0,0,w,h); blob=await new Promise(res=>els.work.toBlob(res,'image/jpeg',0.92)); }
+      const file=new File([blob],`snap-${Date.now()}.jpg`,{type:'image/jpeg'});
+      stopCamera(); setImage(file);
+    }catch(e){ showToast('Capture failed','err'); }
   }
   els.captureBtn.addEventListener('click', capturePhoto);
   els.closeCam.addEventListener('click', stopCamera);
   els.galleryInCamBtn.addEventListener('click', ()=>{ stopCamera(); els.galleryFile.click(); });
 
-  // Try to start the camera as soon as the page is ready
   document.addEventListener('DOMContentLoaded', ()=>{
     renderHistory();
-    if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia){
-      startCamera();
-    }else{
-      setTimeout(()=>els.file.click(), 300);
-    }
+    if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia){ startCamera(); } else { setTimeout(()=>els.file.click(), 300); }
   });
 </script>
 </body>
