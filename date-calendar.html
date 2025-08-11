@@ -13,16 +13,15 @@
   *{box-sizing:border-box}
   html,body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
 
-  /* Header with extra offset below iPhone status bar */
+  /* Header below iPhone status bar */
   header{
     position:sticky; top:0; z-index:5; background:#0b0f14;
-    padding-top: calc(env(safe-area-inset-top) + 12px);  /* <- pushes below time/battery */
+    padding-top: calc(env(safe-area-inset-top) + 12px);
   }
   h1{
     margin:0; padding:12px 16px;
     min-height:calc(44px + env(safe-area-inset-top));
-    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
-    line-height:1.2;
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap; line-height:1.2;
   }
   h1 .logo{
     display:inline-grid; place-items:center; width:28px; height:28px;
@@ -44,15 +43,52 @@
   .preview{width:100%;max-height:320px;object-fit:contain;border-radius:12px;border:1px solid var(--border);background:#0a1016}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   @media (max-width:560px){.grid2{grid-template-columns:1fr}}
+
   /* Toast */
   #toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#0f172a;color:#e7f0f2;border:1px solid #1f2a36;padding:10px 14px;border-radius:12px;box-shadow:0 8px 30px #0006;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
   #toast.show{opacity:1;transform:translateX(-50%) translateY(-4px)} #toast.ok{border-color:#14532d} #toast.err{border-color:#7f1d1d}
+
+  /* Camera overlay */
+  .camOverlay{
+    position:fixed; inset:0; z-index:20; background:#000; display:none;
+  }
+  .camActive{display:block}
+  .camChrome{
+    position:absolute; inset:0;
+    display:flex; flex-direction:column;
+    padding:calc(env(safe-area-inset-top) + 8px) 8px calc(env(safe-area-inset-bottom) + 8px);
+    gap:8px;
+  }
+  video#cam{
+    width:100%; height:auto; max-height:60vh; background:#000; border-radius:14px; object-fit:cover;
+  }
+  .camBar{
+    display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:auto;
+  }
+  .camBtn{appearance:none;border:0;border-radius:999px;padding:14px 18px;font-weight:800;cursor:pointer}
+  .shutter{background:var(--accent); color:#00110e}
+  .closeCam{background:#111827; color:#e7f0f2; border:1px solid #374151}
+  .galleryInCam{background:#334155; color:#e5eef0; border:1px solid #475569}
+  .camHint{color:#9fb2ba; font-size:13px; text-align:center}
 </style>
 <script src="https://unpkg.com/tesseract.js@5.1.0/dist/tesseract.min.js"></script>
 <script src="https://unpkg.com/luxon@3.4.4/build/global/luxon.min.js"></script>
 </head>
 <body>
 <header><h1><span class="logo">📅</span> <span class="title">Snap → Google Sheet: Date Calendar</span></h1></header>
+
+<!-- Camera overlay (auto-opens on load; has Gallery inside) -->
+<div id="camOverlay" class="camOverlay">
+  <div class="camChrome">
+    <video id="cam" playsinline autoplay muted></video>
+    <div class="camHint">Camera opens by default. Capture or choose from your gallery.</div>
+    <div class="camBar">
+      <button id="closeCam" class="camBtn closeCam" type="button">✕ Close</button>
+      <button id="captureBtn" class="camBtn shutter" type="button">● Capture</button>
+      <button id="galleryInCamBtn" class="camBtn galleryInCam" type="button">🖼 Gallery</button>
+    </div>
+  </div>
+</div>
 
 <main>
   <!-- Capture / OCR -->
@@ -106,14 +142,14 @@
   const ENDPOINT = 'https://script.google.com/macros/s/AKfycbwlbzfKuN0bbHsEuT3ykv_z5F11rEUZ5yS2Be2u02I9_-sEBBpG9cEcjCkJ50Qn_rY/exec';
   const LuxonDT = luxon.DateTime;
 
-  /* Mini SW for installability — bumped v5 */
+  /* Mini SW for installability — bumped v6 */
   (function(){ if(!('serviceWorker' in navigator))return;
-    const sw=`/* v5 */ self.addEventListener('install',e=>self.skipWaiting());self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));self.addEventListener('fetch',e=>{e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));});`;
+    const sw=`/* v6 */ self.addEventListener('install',e=>self.skipWaiting());self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));self.addEventListener('fetch',e=>{e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));});`;
     const url=URL.createObjectURL(new Blob([sw],{type:'text/javascript'}));
     navigator.serviceWorker.register(url).catch(()=>{});
   })();
 
-  /* Simple PWA icon + manifest bump v5 */
+  /* Simple PWA icon + manifest bump v6 */
   (function makeIcons(){
     function rr(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
     function draw(size){const c=document.createElement('canvas');c.width=c.height=size;const g=c.getContext('2d'),rad=size*0.22;
@@ -123,7 +159,7 @@
       const cx=cbx+cbw*.5,cy=cby+cbh*.57,r=size*.085;g.beginPath();g.arc(cx,cy,r*1.35,0,2*Math.PI);g.fillStyle='#111827';g.fill();g.beginPath();g.arc(cx,cy,r,0,2*Math.PI);g.fillStyle='#60a5fa';g.fill();
       return c.toDataURL('image/png');}
     const i192=draw(192), i512=draw(512);
-    const manifest={name:"Date Calendar",short_name:"DateCal",start_url:"./?v=5",display:"standalone",background_color:"#0b0f14",theme_color:"#0b0f14",
+    const manifest={name:"Date Calendar",short_name:"DateCal",start_url:"./?v=6",display:"standalone",background_color:"#0b0f14",theme_color:"#0b0f14",
       icons:[{src:i192,sizes:"192x192",type:"image/png",purpose:"any maskable"},{src:i512,sizes:"512x512",type:"image/png",purpose:"any maskable"}]};
     const ml=document.createElement('link');ml.rel='manifest';ml.href='data:application/json,'+encodeURIComponent(JSON.stringify(manifest));document.head.appendChild(ml);
     const l1=document.createElement('link');l1.rel='apple-touch-icon';l1.sizes='180x180';l1.href=i192;document.head.appendChild(l1);
@@ -137,28 +173,60 @@
     preview:$('preview'), imgWrap:$('imgWrap'), work:$('work'), ocrStatus:$('ocrStatus'),
     rawText:$('rawText'), parseBtn:$('parseBtn'),
     event:$('event'), location:$('location'), date:$('date'), startTime:$('startTime'), endTime:$('endTime'),
-    sendBtn:$('sendBtn'), sendStatus:$('sendStatus'), pingBtn:$('pingBtn'), pingStatus:$('pingStatus')};
+    sendBtn:$('sendBtn'), sendStatus:$('sendStatus'), pingBtn:$('pingBtn'), pingStatus:$('pingStatus'),
+    camOverlay:$('camOverlay'), cam:$('cam'),
+    captureBtn:$('captureBtn'), closeCam:$('closeCam'), galleryInCamBtn:$('galleryInCamBtn')
+  };
 
   function showToast(msg,kind='ok',ms=2200){const el=$('toast');el.textContent=msg;el.className='';el.classList.add('show',kind);clearTimeout(showToast._t);showToast._t=setTimeout(()=>el.classList.remove('show'),ms);}
 
   /* ------- Image handling & OCR ------- */
   let imgBlob=null,imgURL=null;
-  function setImage(file){imgBlob=file;imgURL&&URL.revokeObjectURL(imgURL);imgURL=URL.createObjectURL(file);els.preview.src=imgURL;els.imgWrap.style.display='block';els.ocrBtn.disabled=false;els.ocrProBtn.disabled=false;}
-  els.file.addEventListener('change',()=>{if(els.file.files[0])setImage(els.file.files[0]);});
-  els.galleryBtn.addEventListener('click',()=>els.galleryFile.click());
-  els.galleryFile.addEventListener('change',()=>{if(els.galleryFile.files[0])setImage(els.galleryFile.files[0]);});
-  els.clearBtn.addEventListener('click',()=>{imgBlob=null;els.imgWrap.style.display='none';els.rawText.value='';els.ocrStatus.textContent='';});
+  function setImage(file){
+    imgBlob=file;
+    if(imgURL) URL.revokeObjectURL(imgURL);
+    imgURL=URL.createObjectURL(file);
+    els.preview.src=imgURL; els.imgWrap.style.display='block';
+    els.ocrBtn.disabled=false; els.ocrProBtn.disabled=false;
+    // Auto-run regular OCR after capture to save a tap
+    setTimeout(()=>els.ocrBtn.click(), 200);
+  }
+  els.file.addEventListener('change',()=>{ if(els.file.files[0]) setImage(els.file.files[0]); });
+  els.galleryBtn.addEventListener('click', ()=> els.galleryFile.click());
+  els.galleryFile.addEventListener('change', ()=>{ if(els.galleryFile.files[0]) setImage(els.galleryFile.files[0]); });
+  els.clearBtn.addEventListener('click', ()=>{ imgBlob=null; els.imgWrap.style.display='none'; els.rawText.value=''; els.ocrStatus.textContent=''; });
 
-  async function recognizeFromBlob(file,{pro=false}={}){const bmp=await createImageBitmap(file);const maxW=1800,scale=Math.min(1,maxW/bmp.width),W=Math.floor(bmp.width*scale),H=Math.floor(bmp.height*scale);const cvs=els.work,ctx=cvs.getContext('2d');cvs.width=W;cvs.height=H;ctx.drawImage(bmp,0,0,W,H);if(pro){const img=ctx.getImageData(0,0,W,H),d=img.data;const contrast=1.35;for(let i=0;i<d.length;i+=4){let y=0.2126*d[i]+0.7152*d[i+1]+0.0722*d[i+2];y=(y-128)*contrast+128;const v=y>180?255:0;d[i]=d[i+1]=d[i+2]=v;d[i+3]=255;}ctx.putImageData(img,0,0);}return Tesseract.recognize(cvs,'eng',{tessedit_char_whitelist:'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789:,.-/()&@#\\n ',preserve_interword_spaces:'1',psm:6});}
-  els.ocrBtn.addEventListener('click',async()=>{if(!imgBlob)return;els.ocrStatus.textContent='OCR…';try{const{data}=await recognizeFromBlob(imgBlob,{pro:false});els.rawText.value=cleanInput((data.text||'').trim());els.ocrStatus.textContent='OCR complete ✔';showToast('OCR complete','ok');}catch(e){els.ocrStatus.textContent='OCR error: '+e.message;showToast('OCR error','err');}});
-  els.ocrProBtn.addEventListener('click',async()=>{if(!imgBlob)return;els.ocrStatus.textContent='Pro OCR…';try{const{data}=await recognizeFromBlob(imgBlob,{pro:true});els.rawText.value=cleanInput((data.text||'').trim());els.ocrStatus.textContent='Pro OCR complete ✔';showToast('Pro OCR complete','ok');}catch(e){els.ocrStatus.textContent='OCR error: '+e.message;showToast('OCR error','err');}});
+  async function recognizeFromBlob(file,{pro=false}={}){
+    const bmp=await createImageBitmap(file);
+    const maxW=1800, scale=Math.min(1,maxW/bmp.width), W=Math.floor(bmp.width*scale), H=Math.floor(bmp.height*scale);
+    const cvs=els.work, ctx=cvs.getContext('2d'); cvs.width=W; cvs.height=H; ctx.drawImage(bmp,0,0,W,H);
+    if(pro){
+      const img=ctx.getImageData(0,0,W,H), d=img.data; const contrast=1.35;
+      for(let i=0;i<d.length;i+=4){ let y=0.2126*d[i]+0.7152*d[i+1]+0.0722*d[i+2]; y=(y-128)*contrast+128; const v=y>180?255:0; d[i]=d[i+1]=d[i+2]=v; d[i+3]=255; }
+      ctx.putImageData(img,0,0);
+    }
+    return Tesseract.recognize(cvs,'eng',{tessedit_char_whitelist:'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789:,.-/()&@#\\n ',preserve_interword_spaces:'1',psm:6});
+  }
+  els.ocrBtn.addEventListener('click', async ()=>{ if(!imgBlob) return; els.ocrStatus.textContent='OCR…';
+    try{ const {data}=await recognizeFromBlob(imgBlob,{pro:false}); els.rawText.value=cleanInput((data.text||'').trim()); els.ocrStatus.textContent='OCR complete ✔'; showToast('OCR complete','ok'); }
+    catch(e){ els.ocrStatus.textContent='OCR error: '+e.message; showToast('OCR error','err'); }});
+  els.ocrProBtn.addEventListener('click', async ()=>{ if(!imgBlob) return; els.ocrStatus.textContent='Pro OCR…';
+    try{ const {data}=await recognizeFromBlob(imgBlob,{pro:true}); els.rawText.value=cleanInput((data.text||'').trim()); els.ocrStatus.textContent='Pro OCR complete ✔'; showToast('Pro OCR complete','ok'); }
+    catch(e){ els.ocrStatus.textContent='OCR error: '+e.message; showToast('OCR error','err'); }});
 
-  /* ------- Parsing ------- */
+  /* ------- Parsing (unchanged) ------- */
   const BEND_VENUES=['Hayden Homes Amphitheater','Les Schwab Amphitheater','Volcanic Theatre Pub','Tower Theatre','Old Mill','Hayden Homes Amphitheatre','Hayden Homes Ampitheater'];
   const VENUE_WORDS='Amphitheater|Amphitheatre|Theatre|Theater|Pub|Bar|Brew|Brewery|Taproom|Arena|Hall|Center|Centre|Club|Cafe|Park|Pavilion|Auditorium|Stadium|Saloon|Lounge|Venue|Mill';
   const VENUE_RE=new RegExp(`([A-Z][A-Za-z'&.-]+(?:\\s+[A-Z][A-Za-z'&.-]+){0,6})\\s+(${VENUE_WORDS})\\b`,'i');
 
-  function cleanInput(t){return t.replace(/[\u0000-\u001f\u007f]/g,' ').replace(/\u2013|\u2014|—|–/g,'-').replace(/[|_]{2,}/g,' ').replace(/[^\w@#:,.\-\/()&\n ]/g,' ').replace(/\s{2,}/g,' ').trim();}
+  function cleanInput(t){
+    return t.replace(/[\u0000-\u001f\u007f]/g,' ')
+            .replace(/\u2013|\u2014|—|–/g,'-')
+            .replace(/[|_]{2,}/g,' ')
+            .replace(/[^\w@#:,.\-\/()&\n ]/g,' ')
+            .replace(/\s{2,}/g,' ')
+            .trim();
+  }
 
   function extractDateSpan(text){
     const month='January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec';
@@ -294,6 +362,71 @@
       els.sendStatus.innerHTML='<span class="err">Send failed:</span> '+e.message+'<div class="helper">Check Execute as=Me, Access=Anyone, Sheet ID/tab name.</div>';
       showToast('Push failed','err');
     }finally{ els.sendBtn.disabled=false; }
+  });
+
+  /* ===== Camera overlay logic ===== */
+  let camStream=null;
+  async function startCamera(){
+    try{
+      camStream = await navigator.mediaDevices.getUserMedia({
+        video:{ facingMode:{ ideal:'environment' } }, audio:false
+      });
+      els.cam.srcObject = camStream;
+      els.camOverlay.classList.add('camActive');
+    }catch(err){
+      // Fallback: if blocked/unsupported, open file picker
+      console.warn('Camera start failed:', err);
+      els.camOverlay.classList.remove('camActive');
+      showToast('Camera permission blocked — using Gallery', 'err', 2600);
+      setTimeout(()=>els.file.click(), 250);
+    }
+  }
+  function stopCamera(){
+    if(camStream){ camStream.getTracks().forEach(t=>t.stop()); camStream=null; }
+    els.cam.srcObject=null;
+    els.camOverlay.classList.remove('camActive');
+  }
+  async function capturePhoto(){
+    if(!camStream){ await startCamera(); if(!camStream) return; }
+    const track = camStream.getVideoTracks()[0];
+    const imgCap = ('ImageCapture' in window) ? new ImageCapture(track) : null;
+    try{
+      let blob;
+      if(imgCap && imgCap.takePhoto){ blob = await imgCap.takePhoto(); }
+      else{
+        // Canvas fallback
+        const video = els.cam;
+        const w = video.videoWidth || 1280;
+        const h = video.videoHeight || 720;
+        els.work.width=w; els.work.height=h;
+        const ctx=els.work.getContext('2d');
+        ctx.drawImage(video,0,0,w,h);
+        blob = await new Promise(res=>els.work.toBlob(res,'image/jpeg',0.92));
+      }
+      const file = new File([blob], `snap-${Date.now()}.jpg`, {type:'image/jpeg'});
+      stopCamera();
+      setImage(file);
+    }catch(e){
+      console.error('Capture failed', e);
+      showToast('Capture failed', 'err');
+    }
+  }
+
+  els.captureBtn.addEventListener('click', capturePhoto);
+  els.closeCam.addEventListener('click', stopCamera);
+  els.galleryInCamBtn.addEventListener('click', ()=>{
+    stopCamera();
+    els.galleryFile.click();
+  });
+
+  // Try to start the camera as soon as the page is ready
+  document.addEventListener('DOMContentLoaded', ()=>{
+    if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia){
+      startCamera(); // permission prompt will appear once
+    }else{
+      // very old iOS: fallback to file input
+      setTimeout(()=>els.file.click(), 300);
+    }
   });
 </script>
 </body>
