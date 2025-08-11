@@ -19,17 +19,15 @@
   .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;margin:12px 0}
   label{display:block;font-size:13px;color:var(--muted);margin:10px 0 6px}
   input[type="text"],textarea{width:100%;border:1px solid var(--border);background:var(--input);color:var(--fg);border-radius:12px;padding:14px;font-size:16px}
-  input[type="checkbox"]{transform:scale(1.2)} textarea{min-height:96px;resize:vertical}
   .btn{appearance:none;border:0;border-radius:14px;padding:14px 16px;font-weight:700;color:#00110e;background:var(--accent);cursor:pointer;min-height:44px}
-  .btn.secondary{background:#334155;color:#e5eef0;border:1px solid var(--border)} .btn:disabled{opacity:.6;cursor:not-allowed}
+  .btn.secondary{background:#334155;color:#e5eef0;border:1px solid var(--border)}
+  .btn:disabled{opacity:.6;cursor:not-allowed}
   .toolbar{display:flex;gap:10px;flex-wrap:wrap}
   .status{font-size:14px;margin-top:10px}
   .ok{color:var(--accent2)} .warnText{color:var(--warn)} .err{color:var(--err)}
   .preview{width:100%;max-height:320px;object-fit:contain;border-radius:12px;border:1px solid var(--border);background:#0a1016}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   @media (max-width:560px){.grid2{grid-template-columns:1fr}}
-  .fabbar{position:sticky;bottom:0;z-index:10;background:linear-gradient(180deg,#0b0f1400,#0b0f14 30%);padding:8px 4px}
-  .fabbar .toolbar{justify-content:space-between}
   /* Toast */
   #toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#0f172a;color:#e7f0f2;border:1px solid #1f2a36;padding:10px 14px;border-radius:12px;box-shadow:0 8px 30px #0006;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
   #toast.show{opacity:1;transform:translateX(-50%) translateY(-4px)} #toast.ok{border-color:#14532d} #toast.err{border-color:#7f1d1d}
@@ -77,25 +75,12 @@
       <div><label for="date">Date (Tue, July 1, 2025)</label><input id="date" type="text" /></div>
       <div><label for="startTime">Start Time (h:mm AM/PM)</label><input id="startTime" type="text" /></div>
       <div><label for="endTime">End Time (h:mm AM/PM)</label><input id="endTime" type="text" /></div>
-      <div style="display:flex;align-items:flex-end;gap:10px">
-        <input id="allDay" type="checkbox" /><label for="allDay">All Day (clears times)</label>
-      </div>
     </div>
-    <label for="notes">Notes (≤5 words)</label>
-    <textarea id="notes" maxlength="48"></textarea>
     <div class="toolbar" style="margin-top:10px">
       <button id="sendBtn" class="btn" type="button">➕ Add Row</button>
     </div>
     <div id="sendStatus" class="status"></div>
   </section>
-
-  <div class="fabbar">
-    <div class="toolbar">
-      <button id="quickOCR" class="btn secondary" type="button">📷 OCR</button>
-      <button id="quickParse" class="btn secondary" type="button">🧠 Parse</button>
-      <button id="quickSend" class="btn" type="button">➕ Add Row</button>
-    </div>
-  </div>
 </main>
 
 <div id="toast" aria-live="polite"></div>
@@ -132,20 +117,28 @@
 
   /* ------- Helpers & Elements ------- */
   const $ = id => document.getElementById(id);
-  const els = { file:$('file'), galleryFile:$('galleryFile'), galleryBtn:$('galleryBtn'),
+  const els = {
+    file:$('file'), galleryFile:$('galleryFile'), galleryBtn:$('galleryBtn'),
     ocrBtn:$('ocrBtn'), ocrProBtn:$('ocrProBtn'), clearBtn:$('clearBtn'),
     preview:$('preview'), imgWrap:$('imgWrap'), work:$('work'), ocrStatus:$('ocrStatus'),
     rawText:$('rawText'), parseBtn:$('parseBtn'),
-    event:$('event'), location:$('location'), date:$('date'), startTime:$('startTime'), endTime:$('endTime'), allDay:$('allDay'), notes:$('notes'),
+    event:$('event'), location:$('location'), date:$('date'), startTime:$('startTime'), endTime:$('endTime'),
     sendBtn:$('sendBtn'), sendStatus:$('sendStatus'),
-    quickOCR:$('quickOCR'), quickParse:$('quickParse'), quickSend:$('quickSend'),
-    pingBtn:$('pingBtn'), pingStatus:$('pingStatus') };
+    pingBtn:$('pingBtn'), pingStatus:$('pingStatus')
+  };
 
-  function showToast(msg, kind='ok', ms=2200){ const el=$('toast'); el.textContent=msg; el.className=''; el.classList.add('show', kind); clearTimeout(showToast._t); showToast._t=setTimeout(()=>el.classList.remove('show'), ms); }
+  function showToast(msg, kind='ok', ms=2200){
+    const el=$('toast'); el.textContent=msg; el.className=''; el.classList.add('show', kind);
+    clearTimeout(showToast._t); showToast._t=setTimeout(()=>el.classList.remove('show'), ms);
+  }
 
   /* ------- Image handling & OCR (with optional binarization) ------- */
   let imgBlob=null, imgURL=null;
-  function setImage(file){ imgBlob=file; imgURL&&URL.revokeObjectURL(imgURL); imgURL=URL.createObjectURL(file); els.preview.src=imgURL; els.imgWrap.style.display='block'; els.ocrBtn.disabled=false; els.ocrProBtn.disabled=false; }
+  function setImage(file){
+    imgBlob=file; imgURL&&URL.revokeObjectURL(imgURL); imgURL=URL.createObjectURL(file);
+    els.preview.src=imgURL; els.imgWrap.style.display='block';
+    els.ocrBtn.disabled=false; els.ocrProBtn.disabled=false;
+  }
   els.file.addEventListener('change', ()=>{ if(els.file.files[0]) setImage(els.file.files[0]); });
   els.galleryBtn.addEventListener('click', ()=> els.galleryFile.click());
   els.galleryFile.addEventListener('change', ()=>{ if(els.galleryFile.files[0]) setImage(els.galleryFile.files[0]); });
@@ -169,9 +162,8 @@
     try{ const {data}=await recognizeFromBlob(imgBlob,{pro:true}); els.rawText.value=cleanInput((data.text||'').trim()); els.ocrStatus.textContent='Pro OCR complete ✔'; showToast('Pro OCR complete','ok'); }
     catch(e){ els.ocrStatus.textContent='OCR error: '+e.message; showToast('OCR error','err'); }});
 
-  /* ------- Smarter parsing ------- */
+  /* ------- Parsing ------- */
 
-  // Bend/OR bias list
   const BEND_VENUES=['Hayden Homes Amphitheater','Les Schwab Amphitheater','Volcanic Theatre Pub','Tower Theatre','Old Mill','Hayden Homes Amphitheatre','Hayden Homes Ampitheater'];
   const VENUE_WORDS='Amphitheater|Amphitheatre|Theatre|Theater|Pub|Bar|Brew|Brewery|Taproom|Arena|Hall|Center|Centre|Club|Cafe|Park|Pavilion|Auditorium|Stadium|Saloon|Lounge|Venue|Mill';
   const VENUE_RE=new RegExp(`([A-Z][A-Za-z'&.-]+(?:\\s+[A-Z][A-Za-z'&.-]+){0,6})\\s+(${VENUE_WORDS})\\b`,'i');
@@ -196,9 +188,8 @@
     for(const re of patterns){
       const m=text.match(re);
       if(m){
-        const raw=m[0]; // normalize
+        const raw=m[0];
         const comp = (()=>{
-          // try Luxon formats
           const guess = m[1] && isNaN(+m[1]) ? [m[1], m[2], m[3]||''].filter(Boolean).join(' ')
                                             : [m[1], m[2], m[3]||''].filter(Boolean).join('/');
           let dt=LuxonDT.fromFormat(guess,'LLL d yyyy'); if(!dt.isValid) dt=LuxonDT.fromFormat(guess,'LLLL d yyyy');
@@ -222,7 +213,7 @@
     const t = text.replace(/\u2013|\u2014|—|–/g,'-');
     let m = t.match(/(\b\d{1,2}(?::?\d{2})?\s*(?:am|pm)?)[ )]*[-to]{1,3}[ )]*(\d{1,2}(?::?\d{2})?\s*(?:am|pm)?)/i);
     if(m){
-      const raw=m[0], a=normalizeTime(m[1]), b=normalizeTime(m[2]); 
+      const raw=m[0], a=normalizeTime(m[1]), b=normalizeTime(m[2]);
       return {raw, start:a||'', end:b||'', startIdx:t.indexOf(raw), endIdx:t.indexOf(raw)+raw.length};
     }
     m = t.match(/show[^0-9]{0,6}(\d{1,2}(:\d{2})?\s*(?:am|pm)?)/i);
@@ -246,36 +237,24 @@
   function format12h(h24,min){ const ap=h24>=12?'PM':'AM'; let h=h24%12; if(h===0) h=12; const mm=String(min||0).padStart(2,'0'); return `${h}:${mm} ${ap}`; }
 
   function extractVenueSpan(text){
-    // 1) Known Bend venues first
     for(const v of BEND_VENUES){
       const i=text.toLowerCase().indexOf(v.toLowerCase());
       if(i!==-1){ const pretty = /Bend|, OR/i.test(text) ? v : `${v}, Bend, OR`; return {raw:v, pretty, start:i, end:i+v.length}; }
     }
-    // 2) Generic proper-noun + venue word
     const m=text.match(VENUE_RE);
     if(m){ const raw = `${m[1]} ${m[2]}`; const i=text.indexOf(m[0]); const pretty = /Bend|, OR/i.test(text) ? raw : `${raw}, Bend, OR`; return {raw, pretty, start:i, end:i+raw.length}; }
-    // 3) City, ST
     const m2=text.match(/\b([A-Z][A-Za-z'.-]{2,})\s*,\s*([A-Z]{2})\b/);
     if(m2){ const raw=m2[0]; const i=text.indexOf(raw); return {raw, pretty:raw, start:i, end:i+raw.length}; }
     return {raw:'', pretty:'', start:-1, end:-1};
   }
 
   function buildEventTitle(text, spans){
-    // remove detected spans from text, then squeeze and take leading capitalized chunk
     let out=text;
     for(const s of spans){ if(s && s.start>=0) out = out.slice(0,s.start) + ' ' + out.slice(s.end); }
     out = out.replace(/\s+(at|in|on|@)\s+/ig,' ').replace(/\s{2,}/g,' ').trim();
-    // Prefer first 2–8 tokens that start with capital or are words
     const words = out.split(/\s+/).filter(Boolean);
     if(words.length<=10) return out;
-    // if long, keep up to 8 words
     return words.slice(0,8).join(' ');
-  }
-
-  function toNotes(text){
-    const STOP=new Set('the a an and or for with to of in on at from by this that these those your our their my we you is are was were be been have has do done night music event live show party festival'.split(/\s+/));
-    const words=text.toLowerCase().replace(/[^a-z0-9\s]/g,' ').split(/\s+/).filter(Boolean);
-    const keep=[]; for(const w of words){ if(STOP.has(w)) continue; keep.push(w); if(keep.length>=5) break; } return keep.join(' ') || words.slice(0,5).join(' ');
   }
 
   function parseAll(raw){
@@ -285,48 +264,46 @@
     const v = extractVenueSpan(text);
 
     const event = buildEventTitle(text, [d, t, v]) || text.split(/\s+/).slice(0,8).join(' ');
-    const allDay = !(t.start || t.end);
-    const notes = toNotes(text);
-
-    return { event, location:v.pretty, date:d.pretty, start:t.start, end:t.end, allDay, notes };
+    return { event, location:v.pretty, date:d.pretty, start:t.start, end:t.end };
   }
 
-  /* Apply & hooks */
   function applyParsed(p){
     els.event.value=p.event||'';
     els.location.value=p.location||'';
     els.date.value=p.date||'';
     els.startTime.value=p.start||'';
     els.endTime.value=p.end||'';
-    els.allDay.checked=p.allDay;
-    els.notes.value=p.notes||'';
   }
 
   els.parseBtn.addEventListener('click', ()=>{ const p=parseAll(els.rawText.value||''); applyParsed(p); showToast('Parsed fields','ok'); });
-  els.quickOCR.addEventListener('click', ()=> els.ocrBtn.click());
-  els.quickParse.addEventListener('click', ()=> els.parseBtn.click());
-  els.quickSend.addEventListener('click', ()=> els.sendBtn.click());
-
-  // All-day XOR
-  function onTimesChanged(){ if(els.startTime.value||els.endTime.value) els.allDay.checked=false; }
-  els.startTime.addEventListener('input', onTimesChanged);
-  els.endTime.addEventListener('input', onTimesChanged);
-  els.allDay.addEventListener('change', ()=>{ if(els.allDay.checked){ els.startTime.value=''; els.endTime.value=''; } });
 
   // Ping
   els.pingBtn.addEventListener('click', async ()=>{
     els.pingStatus.textContent='Pinging…';
-    try{ const r=await fetch(ENDPOINT,{method:'GET'}); const t=await r.text(); if(r.ok){ els.pingStatus.innerHTML=`<span class="ok">OK:</span> ${t}`; showToast('Ping OK','ok'); } else { els.pingStatus.innerHTML=`<span class="err">Error:</span> ${t||r.status}`; showToast('Ping failed','err'); } }
-    catch(e){ els.pingStatus.innerHTML=`<span class="err">Network error:</span> ${e.message}`; showToast('Network error','err'); }
+    try{
+      const r=await fetch(ENDPOINT,{method:'GET'}); const t=await r.text();
+      if(r.ok){ els.pingStatus.innerHTML=`<span class="ok">OK:</span> ${t}`; showToast('Ping OK','ok'); }
+      else { els.pingStatus.innerHTML=`<span class="err">Error:</span> ${t||r.status}`; showToast('Ping failed','err'); }
+    } catch(e){ els.pingStatus.innerHTML=`<span class="err">Network error:</span> ${e.message}`; showToast('Network error','err'); }
   });
 
   // Send (text/plain to avoid preflight)
   els.sendBtn.addEventListener('click', async ()=>{
-    const fields={ event:els.event.value.trim(), location:els.location.value.trim(), date:els.date.value.trim(),
-      startTime:els.startTime.value.trim(), endTime:els.endTime.value.trim(), allDay:els.allDay.checked, notes:els.notes.value.trim() };
-    if(!fields.event||!fields.date){ els.sendStatus.innerHTML='<span class="warnText">Need at least Event and Date.</span>'; showToast('Add Event & Date','err'); return; }
-    if(fields.allDay){ fields.startTime=''; fields.endTime=''; }
-    const payload=Object.assign({},fields,{ Event:fields.event, Location:fields.location, Date:fields.date, StartTime:fields.startTime, EndTime:fields.endTime, AllDay:fields.allDay, Notes:fields.notes });
+    const fields={
+      event:els.event.value.trim(),
+      location:els.location.value.trim(),
+      date:els.date.value.trim(),
+      startTime:els.startTime.value.trim(),
+      endTime:els.endTime.value.trim()
+    };
+    if(!fields.event||!fields.date){
+      els.sendStatus.innerHTML='<span class="warnText">Need at least Event and Date.</span>';
+      showToast('Add Event & Date','err'); return;
+    }
+    const payload=Object.assign({},fields,{
+      Event:fields.event, Location:fields.location, Date:fields.date,
+      StartTime:fields.startTime, EndTime:fields.endTime
+    });
 
     els.sendBtn.disabled=true; els.sendStatus.textContent='Sending…'; showToast('Sending…','ok',1200);
     try{
@@ -334,10 +311,10 @@
       const t=await r.text(); if(!r.ok) throw new Error(t||('HTTP '+r.status));
       els.sendStatus.innerHTML='<span class="ok">Row appended ✔</span>'; showToast('Push successful ✔','ok');
     }catch(e){
-      els.sendStatus.innerHTML='<span class="err">Send failed:</span> '+e.message+'<div class="helper">Check Execute as=Me, Access=Anyone, Sheet ID/tab name.</div>'; showToast('Push failed','err');
+      els.sendStatus.innerHTML='<span class="err">Send failed:</span> '+e.message+'<div class="helper">Check Execute as=Me, Access=Anyone, Sheet ID/tab name.</div>';
+      showToast('Push failed','err');
     }finally{ els.sendBtn.disabled=false; }
   });
 </script>
 </body>
 </html>
-
