@@ -9,13 +9,13 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="Date Calendar" />
 <style>
-  :root { --bg:#0b0f14; --fg:#e7f0f2; --muted:#9fb2ba; --accent:#2dd4bf; --accent2:#22c55e; --warn:#f59e0b; --err:#ef4444; --card:#121a22; --input:#0f1720; --border:#1f2a36; }
+  :root { --bg:#0b0f14; --fg:#e7f0f2; --muted:#9fb2ba; --accent:#2dd4bf; --accent2:#22c55e; --warn:#f59e0b; --err:#ef4444; --card:#121a22; --input:#0f1720; --border:#1f2a36; --overlay:#0008; --del:#7f1d1d; }
   *{box-sizing:border-box}
   html,body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
 
   /* Header below iPhone status bar */
   header{
-    position:sticky; top:0; z-index:5; background:#0b0f14;
+    position:sticky; top:0; z-index:30; background:#0b0f14;
     padding-top: calc(env(safe-area-inset-top) + 12px);
   }
   h1{
@@ -23,6 +23,11 @@
     min-height:calc(44px + env(safe-area-inset-top));
     display:flex; align-items:center; gap:10px; flex-wrap:wrap; line-height:1.2;
   }
+  .burger{
+    appearance:none;background:#0f172a;border:1px solid #1f2a36;color:#e7f0f2;
+    width:38px;height:38px;border-radius:10px;display:inline-grid;place-items:center;cursor:pointer;flex-shrink:0;
+  }
+  .burger svg{width:20px;height:20px}
   h1 .logo{
     display:inline-grid; place-items:center; width:28px; height:28px;
     border-radius:10px; background:linear-gradient(135deg,var(--accent),#60a5fa);
@@ -36,6 +41,7 @@
   input[type="text"],textarea{width:100%;border:1px solid var(--border);background:var(--input);color:var(--fg);border-radius:12px;padding:14px;font-size:16px}
   .btn{appearance:none;border:0;border-radius:14px;padding:14px 16px;font-weight:700;color:#00110e;background:var(--accent);cursor:pointer;min-height:44px}
   .btn.secondary{background:#334155;color:#e5eef0;border:1px solid var(--border)}
+  .btn.ghost{background:#0f172a;color:#e7f0f2;border:1px solid #1f2a36}
   .btn:disabled{opacity:.6;cursor:not-allowed}
   .toolbar{display:flex;gap:10px;flex-wrap:wrap}
   .status{font-size:14px;margin-top:10px}
@@ -45,47 +51,85 @@
   @media (max-width:560px){.grid2{grid-template-columns:1fr}}
 
   /* Toast */
-  #toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#0f172a;color:#e7f0f2;border:1px solid #1f2a36;padding:10px 14px;border-radius:12px;box-shadow:0 8px 30px #0006;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
+  #toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#0f172a;color:#e7f0f2;border:1px solid #1f2a36;padding:10px 14px;border-radius:12px;box-shadow:0 8px 30px #0006;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:60}
   #toast.show{opacity:1;transform:translateX(-50%) translateY(-4px)} #toast.ok{border-color:#14532d} #toast.err{border-color:#7f1d1d}
 
   /* Camera overlay */
-  .camOverlay{
-    position:fixed; inset:0; z-index:20; background:#000; display:none;
-  }
+  .camOverlay{position:fixed; inset:0; z-index:40; background:#000; display:none}
   .camActive{display:block}
-  .camChrome{
-    position:absolute; inset:0;
-    display:flex; flex-direction:column;
-    padding:calc(env(safe-area-inset-top) + 8px) 8px calc(env(safe-area-inset-bottom) + 8px);
-    gap:8px;
-  }
-  video#cam{
-    width:100%; height:auto; max-height:60vh; background:#000; border-radius:14px; object-fit:cover;
-  }
-  .camBar{
-    display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:auto;
-  }
+  .camChrome{position:absolute; inset:0; display:flex; flex-direction:column;
+    padding:calc(env(safe-area-inset-top) + 8px) 8px calc(env(safe-area-inset-bottom) + 8px); gap:8px;}
+  video#cam{width:100%; height:auto; max-height:60vh; background:#000; border-radius:14px; object-fit:cover;}
+  .camBar{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:auto;}
   .camBtn{appearance:none;border:0;border-radius:999px;padding:14px 18px;font-weight:800;cursor:pointer}
   .shutter{background:var(--accent); color:#00110e}
   .closeCam{background:#111827; color:#e7f0f2; border:1px solid #374151}
-  .PhotosInCam{background:#334155; color:#e5eef0; border:1px solid #475569}
+  .galleryInCam{background:#334155; color:#e5eef0; border:1px solid #475569}
   .camHint{color:#9fb2ba; font-size:13px; text-align:center}
+
+  /* Drawer (History) */
+  .shade{position:fixed; inset:0; background:var(--overlay); opacity:0; pointer-events:none; transition:.2s; z-index:35}
+  .shade.on{opacity:1; pointer-events:auto}
+  .drawer{
+    position:fixed; inset:0 auto 0 0; width:86vw; max-width:360px; background:#0b1220; border-right:1px solid #1f2a36;
+    transform:translateX(-100%); transition:transform .23s ease; z-index:50;
+    padding:calc(env(safe-area-inset-top) + 10px) 12px 12px;
+    display:flex; flex-direction:column; gap:10px;
+  }
+  .drawer.on{transform:translateX(0)}
+  .drawer h2{margin:0; font-size:18px}
+  .historyActions{display:flex; gap:8px}
+  .historyList{overflow:auto; -webkit-overflow-scrolling:touch; flex:1; border-top:1px solid #1f2a36}
+  .itemWrap{position:relative; overflow:hidden; touch-action:pan-y; user-select:none}
+  .itemDelete{
+    position:absolute; top:0; right:0; bottom:0; width:92px; background:var(--del); color:#fff;
+    display:grid; place-items:center; font-weight:800;
+  }
+  .item{
+    background:#0f172a; border-bottom:1px solid #1f2a36; padding:12px; transform:translateX(0); transition:transform .15s ease;
+    display:flex; gap:8px; align-items:center;
+  }
+  .itemTitle{font-weight:700}
+  .itemMeta{font-size:12px; color:#9fb2ba}
+  .pill{padding:2px 8px; border-radius:999px; background:#0b1a2a; border:1px solid #1f2a36; font-size:11px; color:#9fb2ba}
 </style>
 <script src="https://unpkg.com/tesseract.js@5.1.0/dist/tesseract.min.js"></script>
 <script src="https://unpkg.com/luxon@3.4.4/build/global/luxon.min.js"></script>
 </head>
 <body>
-<header><h1><span class="logo">📅</span> <span class="title">Snap → Google Sheet: Date Calendar</span></h1></header>
+<header>
+  <h1>
+    <button id="burger" class="burger" aria-label="Open menu">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+    <span class="logo">📅</span>
+    <span class="title">Snap → Google Sheet: Date Calendar</span>
+  </h1>
+</header>
 
-<!-- Camera overlay (auto-opens on load; has Photos inside) -->
+<!-- Drawer + Shade -->
+<div id="shade" class="shade"></div>
+<aside id="drawer" class="drawer" aria-hidden="true">
+  <div class="historyActions">
+    <button id="newEventBtn" class="btn" type="button">＋ New Event</button>
+    <button id="closeDrawerBtn" class="btn ghost" type="button">Close</button>
+  </div>
+  <div style="display:flex;align-items:center;justify-content:space-between">
+    <h2>History</h2>
+    <span id="historyCount" class="pill">0</span>
+  </div>
+  <div id="historyList" class="historyList"></div>
+</aside>
+
+<!-- Camera overlay (auto-opens on load; has Gallery inside) -->
 <div id="camOverlay" class="camOverlay">
   <div class="camChrome">
     <video id="cam" playsinline autoplay muted></video>
-    <div class="camHint">Camera opens by default. Capture or choose from your Photos.</div>
+    <div class="camHint">Camera opens by default. Capture or choose from your gallery.</div>
     <div class="camBar">
       <button id="closeCam" class="camBtn closeCam" type="button">✕ Close</button>
       <button id="captureBtn" class="camBtn shutter" type="button">● Capture</button>
-      <button id="PhotosInCamBtn" class="camBtn PhotosInCam" type="button">🖼 Photos</button>
+      <button id="galleryInCamBtn" class="camBtn galleryInCam" type="button">🖼 Gallery</button>
     </div>
   </div>
 </div>
@@ -94,10 +138,10 @@
   <!-- Capture / OCR -->
   <section class="card">
     <div class="toolbar">
-      <label class="btn" for="file">📷 Camera</label>
+      <label class="btn" for="file">📷 Snap</label>
       <input id="file" type="file" accept="image/*" capture="environment" hidden />
-      <button id="PhotosBtn" class="btn secondary" type="button">🖼 Photos</button>
-      <input id="PhotosFile" type="file" accept="image/*" hidden />
+      <button id="galleryBtn" class="btn secondary" type="button">🖼 Gallery</button>
+      <input id="galleryFile" type="file" accept="image/*" hidden />
       <button id="ocrBtn" class="btn" type="button" disabled>🔎 OCR</button>
       <button id="ocrProBtn" class="btn secondary" type="button" disabled title="Higher accuracy (slower)">🧪 Pro OCR</button>
       <button id="clearBtn" class="btn secondary" type="button">🧹 Clear</button>
@@ -142,14 +186,14 @@
   const ENDPOINT = 'https://script.google.com/macros/s/AKfycbwlbzfKuN0bbHsEuT3ykv_z5F11rEUZ5yS2Be2u02I9_-sEBBpG9cEcjCkJ50Qn_rY/exec';
   const LuxonDT = luxon.DateTime;
 
-  /* Mini SW for installability — bumped v6 */
+  /* Mini SW for installability — bumped v7 */
   (function(){ if(!('serviceWorker' in navigator))return;
-    const sw=`/* v6 */ self.addEventListener('install',e=>self.skipWaiting());self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));self.addEventListener('fetch',e=>{e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));});`;
+    const sw=`/* v7 */ self.addEventListener('install',e=>self.skipWaiting());self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));self.addEventListener('fetch',e=>{e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));});`;
     const url=URL.createObjectURL(new Blob([sw],{type:'text/javascript'}));
     navigator.serviceWorker.register(url).catch(()=>{});
   })();
 
-  /* Simple PWA icon + manifest bump v6 */
+  /* Simple PWA icon + manifest bump v7 */
   (function makeIcons(){
     function rr(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
     function draw(size){const c=document.createElement('canvas');c.width=c.height=size;const g=c.getContext('2d'),rad=size*0.22;
@@ -159,7 +203,7 @@
       const cx=cbx+cbw*.5,cy=cby+cbh*.57,r=size*.085;g.beginPath();g.arc(cx,cy,r*1.35,0,2*Math.PI);g.fillStyle='#111827';g.fill();g.beginPath();g.arc(cx,cy,r,0,2*Math.PI);g.fillStyle='#60a5fa';g.fill();
       return c.toDataURL('image/png');}
     const i192=draw(192), i512=draw(512);
-    const manifest={name:"Date Calendar",short_name:"DateCal",start_url:"./?v=6",display:"standalone",background_color:"#0b0f14",theme_color:"#0b0f14",
+    const manifest={name:"Date Calendar",short_name:"DateCal",start_url:"./?v=7",display:"standalone",background_color:"#0b0f14",theme_color:"#0b0f14",
       icons:[{src:i192,sizes:"192x192",type:"image/png",purpose:"any maskable"},{src:i512,sizes:"512x512",type:"image/png",purpose:"any maskable"}]};
     const ml=document.createElement('link');ml.rel='manifest';ml.href='data:application/json,'+encodeURIComponent(JSON.stringify(manifest));document.head.appendChild(ml);
     const l1=document.createElement('link');l1.rel='apple-touch-icon';l1.sizes='180x180';l1.href=i192;document.head.appendChild(l1);
@@ -168,17 +212,105 @@
 
   /* ------- Helpers & Elements ------- */
   const $=id=>document.getElementById(id);
-  const els={file:$('file'), PhotosFile:$('PhotosFile'), PhotosBtn:$('PhotosBtn'),
+  const els={
+    file:$('file'), galleryFile:$('galleryFile'), galleryBtn:$('galleryBtn'),
     ocrBtn:$('ocrBtn'), ocrProBtn:$('ocrProBtn'), clearBtn:$('clearBtn'),
     preview:$('preview'), imgWrap:$('imgWrap'), work:$('work'), ocrStatus:$('ocrStatus'),
     rawText:$('rawText'), parseBtn:$('parseBtn'),
     event:$('event'), location:$('location'), date:$('date'), startTime:$('startTime'), endTime:$('endTime'),
     sendBtn:$('sendBtn'), sendStatus:$('sendStatus'), pingBtn:$('pingBtn'), pingStatus:$('pingStatus'),
     camOverlay:$('camOverlay'), cam:$('cam'),
-    captureBtn:$('captureBtn'), closeCam:$('closeCam'), PhotosInCamBtn:$('PhotosInCamBtn')
+    captureBtn:$('captureBtn'), closeCam:$('closeCam'), galleryInCamBtn:$('galleryInCamBtn'),
+    drawer:$('drawer'), shade:$('shade'), burger:$('burger'), newEventBtn:$('newEventBtn'), closeDrawerBtn:$('closeDrawerBtn'),
+    historyList:$('historyList'), historyCount:$('historyCount')
   };
 
   function showToast(msg,kind='ok',ms=2200){const el=$('toast');el.textContent=msg;el.className='';el.classList.add('show',kind);clearTimeout(showToast._t);showToast._t=setTimeout(()=>el.classList.remove('show'),ms);}
+
+  /* ===== History (localStorage) ===== */
+  const HK='datecal_history_v1';
+  function loadHistory(){ try{ return JSON.parse(localStorage.getItem(HK)||'[]'); }catch{ return []; } }
+  function saveHistory(arr){ localStorage.setItem(HK, JSON.stringify(arr)); }
+  function addHistory(entry){
+    const arr=loadHistory();
+    arr.unshift(entry); // newest first
+    if(arr.length>200) arr.pop();
+    saveHistory(arr); renderHistory();
+  }
+  function deleteHistory(id){
+    const arr=loadHistory().filter(x=>x.id!==id);
+    saveHistory(arr); renderHistory();
+  }
+  function renderHistory(){
+    const arr=loadHistory();
+    els.historyCount.textContent=arr.length;
+    const list=els.historyList; list.innerHTML='';
+    if(!arr.length){ list.innerHTML='<div style="padding:14px;color:#9fb2ba">No events yet.</div>'; return; }
+    for(const item of arr){
+      const wrap=document.createElement('div'); wrap.className='itemWrap'; wrap.dataset.id=item.id;
+      const del=document.createElement('div'); del.className='itemDelete'; del.textContent='Delete';
+      const row=document.createElement('div'); row.className='item';
+      row.innerHTML=`
+        <div style="flex:1;min-width:0">
+          <div class="itemTitle" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(item.event||'(No title)')}</div>
+          <div class="itemMeta">${escapeHtml(item.date||'')}${item.location?` • ${escapeHtml(item.location)}`:''}</div>
+        </div>
+      `;
+      wrap.appendChild(del); wrap.appendChild(row); list.appendChild(wrap);
+
+      // Tap to load
+      row.addEventListener('click', ()=>{
+        els.event.value=item.event||'';
+        els.location.value=item.location||'';
+        els.date.value=item.date||'';
+        els.startTime.value=item.startTime||'';
+        els.endTime.value=item.endTime||'';
+        closeDrawer();
+        showToast('Loaded from history','ok');
+      });
+      // Delete tap
+      del.addEventListener('click', ()=> deleteHistory(item.id));
+      // Swipe to delete
+      attachSwipeDelete(wrap, row, item.id);
+    }
+  }
+  function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
+
+  function attachSwipeDelete(wrap, row, id){
+    let sx=0, dx=0, dragging=false;
+    const threshold=80, max=92;
+    function onStart(e){ dragging=true; sx=getX(e); dx=0; row.style.transition='none'; }
+    function onMove(e){ if(!dragging) return; dx=Math.min(0, getX(e)-sx); row.style.transform=`translateX(${Math.max(-max,dx)}px)`; }
+    function onEnd(){ if(!dragging) return; dragging=false; row.style.transition='transform .15s ease';
+      if(Math.abs(dx)>threshold){ row.style.transform=`translateX(${-max}px)`; } else { row.style.transform='translateX(0)'; }
+    }
+    function getX(e){ return e.touches? e.touches[0].clientX : e.clientX; }
+    row.addEventListener('touchstart', onStart, {passive:true});
+    row.addEventListener('touchmove', onMove, {passive:true});
+    row.addEventListener('touchend', onEnd);
+    row.addEventListener('mousedown', onStart);
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onEnd);
+  }
+
+  function openDrawer(){ els.drawer.classList.add('on'); els.shade.classList.add('on'); els.drawer.setAttribute('aria-hidden','false'); }
+  function closeDrawer(){ els.drawer.classList.remove('on'); els.shade.classList.remove('on'); els.drawer.setAttribute('aria-hidden','true'); }
+  els.burger.addEventListener('click', openDrawer);
+  els.closeDrawerBtn.addEventListener('click', closeDrawer);
+  els.shade.addEventListener('click', closeDrawer);
+  els.newEventBtn.addEventListener('click', ()=>{
+    clearAll();
+    closeDrawer();
+    showToast('New event','ok');
+    // Optionally re-open camera for a fresh snap:
+    startCamera();
+  });
+
+  function clearAll(){
+    ['event','location','date','startTime','endTime','rawText'].forEach(id=>{ els[id].value=''; });
+    els.preview.removeAttribute('src'); els.imgWrap.style.display='none'; imgBlob=null;
+    els.ocrStatus.textContent='';
+  }
 
   /* ------- Image handling & OCR ------- */
   let imgBlob=null,imgURL=null;
@@ -188,14 +320,14 @@
     imgURL=URL.createObjectURL(file);
     els.preview.src=imgURL; els.imgWrap.style.display='block';
     els.ocrBtn.disabled=false; els.ocrProBtn.disabled=false;
-    // Auto-run regular OCR after capture to save a tap
-    setTimeout(()=>els.ocrBtn.click(), 200);
+    setTimeout(()=>els.ocrBtn.click(), 200); // auto OCR
   }
   els.file.addEventListener('change',()=>{ if(els.file.files[0]) setImage(els.file.files[0]); });
-  els.PhotosBtn.addEventListener('click', ()=> els.PhotosFile.click());
-  els.PhotosFile.addEventListener('change', ()=>{ if(els.PhotosFile.files[0]) setImage(els.PhotosFile.files[0]); });
-  els.clearBtn.addEventListener('click', ()=>{ imgBlob=null; els.imgWrap.style.display='none'; els.rawText.value=''; els.ocrStatus.textContent=''; });
+  els.galleryBtn.addEventListener('click', ()=> els.galleryFile.click());
+  els.galleryFile.addEventListener('change', ()=>{ if(els.galleryFile.files[0]) setImage(els.galleryFile.files[0]); });
+  els.clearBtn.addEventListener('click', clearAll);
 
+  /* OCR impl */
   async function recognizeFromBlob(file,{pro=false}={}){
     const bmp=await createImageBitmap(file);
     const maxW=1800, scale=Math.min(1,maxW/bmp.width), W=Math.floor(bmp.width*scale), H=Math.floor(bmp.height*scale);
@@ -214,7 +346,7 @@
     try{ const {data}=await recognizeFromBlob(imgBlob,{pro:true}); els.rawText.value=cleanInput((data.text||'').trim()); els.ocrStatus.textContent='Pro OCR complete ✔'; showToast('Pro OCR complete','ok'); }
     catch(e){ els.ocrStatus.textContent='OCR error: '+e.message; showToast('OCR error','err'); }});
 
-  /* ------- Parsing (unchanged) ------- */
+  /* ------- Parsing ------- */
   const BEND_VENUES=['Hayden Homes Amphitheater','Les Schwab Amphitheater','Volcanic Theatre Pub','Tower Theatre','Old Mill','Hayden Homes Amphitheatre','Hayden Homes Ampitheater'];
   const VENUE_WORDS='Amphitheater|Amphitheatre|Theatre|Theater|Pub|Bar|Brew|Brewery|Taproom|Arena|Hall|Center|Centre|Club|Cafe|Park|Pavilion|Auditorium|Stadium|Saloon|Lounge|Venue|Mill';
   const VENUE_RE=new RegExp(`([A-Z][A-Za-z'&.-]+(?:\\s+[A-Z][A-Za-z'&.-]+){0,6})\\s+(${VENUE_WORDS})\\b`,'i');
@@ -338,7 +470,7 @@
     } catch(e){ els.pingStatus.innerHTML=`<span class="err">Network error:</span> ${e.message}`; showToast('Network error','err'); }
   });
 
-  // Send (text/plain to avoid preflight)
+  // Send (text/plain to avoid preflight) + save to History
   els.sendBtn.addEventListener('click', async ()=>{
     const fields={
       event:els.event.value.trim(),
@@ -358,6 +490,8 @@
       const r=await fetch(ENDPOINT,{ method:'POST', headers:{'Content-Type':'text/plain; charset=utf-8'}, body:JSON.stringify(payload) });
       const t=await r.text(); if(!r.ok) throw new Error(t||('HTTP '+r.status));
       els.sendStatus.innerHTML='<span class="ok">Row appended ✔</span>'; showToast('Push successful ✔','ok');
+      // Save to history
+      addHistory({ id:Date.now(), ...fields });
     }catch(e){
       els.sendStatus.innerHTML='<span class="err">Send failed:</span> '+e.message+'<div class="helper">Check Execute as=Me, Access=Anyone, Sheet ID/tab name.</div>';
       showToast('Push failed','err');
@@ -368,16 +502,13 @@
   let camStream=null;
   async function startCamera(){
     try{
-      camStream = await navigator.mediaDevices.getUserMedia({
-        video:{ facingMode:{ ideal:'environment' } }, audio:false
-      });
+      camStream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:{ ideal:'environment' } }, audio:false });
       els.cam.srcObject = camStream;
       els.camOverlay.classList.add('camActive');
     }catch(err){
-      // Fallback: if blocked/unsupported, open file picker
       console.warn('Camera start failed:', err);
       els.camOverlay.classList.remove('camActive');
-      showToast('Camera permission blocked — using Photos', 'err', 2600);
+      showToast('Camera permission blocked — using Gallery', 'err', 2600);
       setTimeout(()=>els.file.click(), 250);
     }
   }
@@ -394,7 +525,6 @@
       let blob;
       if(imgCap && imgCap.takePhoto){ blob = await imgCap.takePhoto(); }
       else{
-        // Canvas fallback
         const video = els.cam;
         const w = video.videoWidth || 1280;
         const h = video.videoHeight || 720;
@@ -411,25 +541,19 @@
       showToast('Capture failed', 'err');
     }
   }
-
   els.captureBtn.addEventListener('click', capturePhoto);
   els.closeCam.addEventListener('click', stopCamera);
-  els.PhotosInCamBtn.addEventListener('click', ()=>{
-    stopCamera();
-    els.PhotosFile.click();
-  });
+  els.galleryInCamBtn.addEventListener('click', ()=>{ stopCamera(); els.galleryFile.click(); });
 
   // Try to start the camera as soon as the page is ready
   document.addEventListener('DOMContentLoaded', ()=>{
+    renderHistory();
     if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia){
-      startCamera(); // permission prompt will appear once
+      startCamera();
     }else{
-      // very old iOS: fallback to file input
       setTimeout(()=>els.file.click(), 300);
     }
   });
 </script>
 </body>
 </html>
-
-
